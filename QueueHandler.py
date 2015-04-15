@@ -18,27 +18,30 @@
 # The Message Queue Handling Module
 
 from __future__ import print_function
-from threading import Thread, RLock
-from Queue import Queue, Empty
-import random
 import time
+import random
+from gevent import Greenlet
+from gevent.lock import RLock
+from gevent.queue import Queue, Empty
+
+import Logger
 from config import *
 from Message import MessageObj
 from DataMgr import DataMgr
-import Logger
+
 
 logger = Logger.Logging('logging')
 
 
-class QueueHandler(Thread):
+class QueueHandler(Greenlet):
 
-    def __init__(self, msg_queue):
+    def __init__(self, msg_queue, real_send_func):
         self.msg_queue = msg_queue
         self.last_idx = None
         self.alive = True
         self._pause_lock = RLock()
-        self._send_func = self._send_func
-        Thread.__init__(self)
+        self._send_func = real_send_func#self._send_func
+        Greenlet.__init__(self)
         self.daemon = True
         self.start()
 
@@ -64,10 +67,6 @@ class QueueHandler(Thread):
     def qsize(self):
         return self.msg_queue.qsize()
 
-    def _send_func(self, bundle):
-        result = 1 if random.random() > 0.7 else 0
-        logger.debug('[QH] SENT %s to %s %s' % (bundle.msg.msgid_h, str(bundle.user.guid), 'FAILED' if result else ''))
-        bundle.callback(result)
 
 
     def run(self):
@@ -75,15 +74,18 @@ class QueueHandler(Thread):
             try:
                 _ = self.msg_queue.get()
             except Empty:
-                time.sleep(MSG_CHECK_INTERV)
+                gevent.sleep(MSG_CHECK_INTERV)
                 continue
-            if not _ and not self.alive:#force break
-                logger.debug('[QH] got exit flag')
-                return
+            if not _:
+                if not self.alive:#force break
+                    logger.debug('[QH] got exit flag')
+                    return
+                else:#can be legacy flag 
+                    continue 
             self._pause_lock.acquire()
             self._send_func(_)
             self._pause_lock.release()
             #TODO sleep longer
-            time.sleep(random.random())
+            gevent.sleep(random.random())
 
 

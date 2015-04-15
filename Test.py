@@ -46,10 +46,10 @@ def test_suite1():
         qh = QueueHandler(dm.msg_queue)
         logger.debug('remaining msg queue size:%d' % qh.qsize)
         assert(qh.qsize == 0)
-        for i in range(20):
+        for i in range(100):
             u = UserObj(i)
             dm.users_add(u)
-        for i in range(20):
+        for i in range(8):
             m = MessageObj(''.join([random.choice(string.letters) for i in range(10)]))
             dm.msg_add(m)
         time.sleep(MSG_CHECK_INTERV)
@@ -69,7 +69,7 @@ def test_suite1():
 
         logger.info('***TESTING jump-in-queue feature***')
         _new = []
-        for i in range(20):
+        for i in range(5):
             u = UserObj(i)
             _new.append(str(u.guid))
             dm.users_add(u)

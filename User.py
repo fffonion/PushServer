@@ -24,9 +24,9 @@ from Message import BundledMessage
 
 class UserObj(object):
 
-    def __init__(self, uid, _match_func = None):
+    def __init__(self, uid, gw_id, _match_func = None):
         self.uid = uid
-        self.guid = uuid.uuid4()
+        self.guid = gw_id
         self.heard_before = 0#the newest message user has been send
         self.leaked_msg = {}#msgid of failed message, prior to heard_before. {msgid:try_count,...}
         self.match_func = _match_func or self._match_func
@@ -48,8 +48,9 @@ class UserObj(object):
         return None
 
     def _match_func(self, msg):
+        return True
         #for test
-        return abs(int(str(self.guid)[-1], 16) - ord(msg.msgid[-1]) ^ 0xF) <= 2 #4/16 = 0.25
+        #return abs(int(str(self.guid)[-1], 16) - ord(msg.msgid[-1]) ^ 0xF) <= 2 #4/16 = 0.25
 
     def _send_callback(self, msg, send_result):
         if send_result > 0:#SEND_FAILED

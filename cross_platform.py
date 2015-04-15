@@ -147,3 +147,26 @@ if sys.platform.startswith('win'):
         11003: '这是一个不可恢复的错误。',
         11004: '有效的名称、 请求类型的任何数据记录'
     }
+#Fix for python2.7.9 missing sslwrap, from https://github.com/gevent/gevent/issues/477
+if sys.version_info[:3] == (2, 7, 9):
+    __ssl__ = __import__('ssl')
+    #import inspect
+    try:
+        _ssl = __ssl__._ssl
+    except AttributeError:
+        _ssl = __ssl__._ssl2
+
+    def new_sslwrap(sock, server_side=False, keyfile=None, certfile=None, cert_reqs=__ssl__.CERT_NONE, ssl_version=__ssl__.PROTOCOL_SSLv23, ca_certs=None, ciphers=None):
+        context = __ssl__.SSLContext(ssl_version)
+        context.verify_mode = cert_reqs or __ssl__.CERT_NONE
+        if ca_certs:
+            context.load_verify_locations(ca_certs)
+        if certfile:
+            context.load_cert_chain(certfile, keyfile)
+        if ciphers:
+            context.set_ciphers(ciphers)
+
+        #caller_self = inspect.currentframe().f_back.f_locals['self']
+        return context._wrap_socket(sock, server_side=server_side)
+    import _ssl
+    _ssl.sslwrap = new_sslwrap

@@ -17,7 +17,10 @@
 
 import os
 import os.path as opath
-from threading import RLock, Thread
+import gevent
+from gevent import Greenlet
+from gevent.lock import RLock
+from gevent.queue import Queue, Empty
 try:
     import ujsoqn as json
 except ImportError:
@@ -28,23 +31,24 @@ import time
 import Logger
 from Message import MessageObj
 from User import UserObj
-from Queue import Queue
+
 from config import *
 logger = Logger.Logging('logging')
 
 
-class DataMgr(Thread):
+class DataMgr(Greenlet):
     pickle_names = ['msgs', 'users', 'bundle_queue']
     data_version = 1000
 
     def __init__(self):
+        Greenlet.__init__(self)
         self._users_lock = RLock()
         self._msgs = {}
         self._users = {}
         self.msg_queue = Queue()
+        self.pending_online_queue = Queue()
         self.bootstrap()
         self._dying = False
-        Thread.__init__(self)
         self.daemon = True
         self.start()
 
@@ -126,18 +130,21 @@ class DataMgr(Thread):
     #         self._msg_queue_lock.release()
     #         return (msgid, msg)
     
+    def user_online(self, guid):
+        #TODO get userid from rid
+        uid = "u" + guid
+        u = UserObj(uid, guid)
+        self.users_add(u)
+        self.pending_online_queue.put(guid)
 
     def users_add(self, _):
         if not isinstance(_, UserObj):
             raise ValueError(" argument is not a UserObj")
         self._users_lock.acquire()
-        guid = str(_.guid)
-        self._users[_.guid.bytes] = _
+        self._users[_.guid] = _
         self._users_lock.release()
 
     def users_get(self, uuid):
-        if '-' in uuid:  # convert to bytes
-            uuid = binascii.unhexlify(uuid)
         if uuid not in self._users:
             raise IndexError(" uuid %d not in users list" % str(uuid))
         return self._users[uuid]
@@ -155,10 +162,11 @@ class DataMgr(Thread):
     def users_count(self):
         return len(self._users)
 
-    def make_bundle(self):
-        logger.debug('[DM] begin mapping of %d * %d' % (self.users_count, self.msg_count))
+    def make_bundle(self, user_keys = None):
+        user_keys = user_keys or self._users.keys()
+        logger.debug('[DM] begin mapping of %d * %d' % (len(user_keys), self.msg_count))
         cnt = 0
-        user_keys = sorted(self._users.keys(), key = lambda x:self._users[x].pr, reverse = True)
+        user_keys = sorted(user_keys, key = lambda x:self._users[x].pr, reverse = True)
         for k in user_keys:
             u = self._users[k]
             for _k, m in self._msgs.iteritems():
@@ -173,5 +181,5 @@ class DataMgr(Thread):
 
     def run(self):
         while not self._dying:
-            time.sleep(60)
+            gevent.sleep(60)
             self._save_cache()

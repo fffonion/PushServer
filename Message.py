@@ -32,7 +32,7 @@ class MessageObj(object):
 
     def __init__(self, payload, tags = []):
         self._payload = payload
-        self.msgid = os.urandom(16)
+        self.msgid = os.urandom(9)
         self.birth = time.time()
 
     @property

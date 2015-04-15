@@ -1,1 +1,5 @@
 *.pkl
+*.pyc
+sim/tlslite
+sim/google
+sim/_build

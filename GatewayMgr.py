@@ -34,6 +34,7 @@ except ImportError:
     import json
 from config import *
 from cross_platform import *
+from Message import MessageObj
 import gw_message_pb2
 
 MSG_SERVER = 0x0
@@ -91,13 +92,13 @@ class Packet(object):
 class GatewayMgr(object):
     PUSH_SERVER_SID = '00000001'
 
-    def __init__(self, logger, online_callback):
+    def __init__(self, logger, send_queue, online_callback_func):
         self.logger = logger
-        self.online_callback = online_callback
+        self.online_callback = online_callback_func
         self._gw_fd_raw = None
         self.gw_fd = None
         self.callback_tbl = {}
-        self._send_queue = Queue()
+        self._send_queue = send_queue
         self.connect()
         self.greenlets = [
             gevent.spawn(self._send),
@@ -105,21 +106,27 @@ class GatewayMgr(object):
         ]
         self.auth()
 
-    def auth(self):
-        self._queued_send('', MSG_CLIENT | MSG_AUTH, '{"token":"foo"}', callback = lambda *__:None)
-
     def connect(self):
         self._gw_fd_raw = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._gw_fd_raw.connect((GATEWAY_HOST, GATEWAY_PORT))
         self.gw_fd = gevent.ssl.SSLSocket(self._gw_fd_raw)
 
+    def auth(self):
+        self._queued_send('', MSG_CLIENT | MSG_AUTH, '{"token":"foo"}')
+
     def send_push(self, bundle):
         if not self.gw_fd or not self._gw_fd_raw:
             self.connect()
-        self._queued_send(bundle.user.guid, MSG_CLIENT | MSG_RECEIPT, bundle.msg.payload, bundle.callback)
+        self._queued_send(
+            bundle.user.guid,
+            MSG_CLIENT | MSG_RECEIPT,
+            bundle.msg.payload,
+            bundle.callback,
+            binascii.hexlify(bundle.msg.msgid) + bundle.user.guid
+        )
 
-    def _queued_send(self, rid, msgtype, body, callback = None):
-        mid = 'PSH' + binascii.hexlify(os.urandom(9))
+    def _queued_send(self, rid, msgtype, body, callback = None, mid = None):
+        mid = 'PSH' + (mid or binascii.hexlify(os.urandom(9)))
         msg = gw_message_pb2.Container()
         msg.SID = GatewayMgr.PUSH_SERVER_SID
         msg.RID = rid
@@ -158,35 +165,43 @@ class GatewayMgr(object):
                 continue
             else:
                 buf = ''
-            self._resp_handler(msg)
+            try:
+                self._resp_handler(msg)
+            except KeyboardInterrupt:
+                break
             
 
     def _resp_handler(self, msg):
-        self.logger.debug("MID=%s" % msg.MID)
-        print(msg)
+        #self.logger.debug("MID=%s" % msg.MID)
         if msg.BODY:
             msg_body = json.loads(msg.BODY)
         else:
             msg_body = {}
+        #print(msg)
         if msg.TYPE & MSG_CLIENT:
-            self.logger.debug('***INCOMING FROM [%s]:%s***' % (msg.SID, msg.BODY))
-        else:#server
-            if msg.TYPE & MSG_EVENT:
-                if msg_body['type'] == 'online':
-                    self.logger.debug('user %s is now online' % msg.SID)
-                    self.online_callback(msg.SID)
-            else:
-                self.logger.debug('***confirmed')
-                mid = msg.MID
+            if msg_body['type'] == 'receipt':
+                mid = msg_body['mid']
+                self.logger.debug('%s confirmed %s' % (msg.SID, mid))
                 if mid in self.callback_tbl:
                     _func = self.callback_tbl.pop(mid)
                     try:
-                        _func(msg)
+                        _func(MessageObj.STATUS_SUCCESS)
                     except KeyboardInterrupt:
-                        return
+                        raise KeyboardInterrupt
                     except Exception as ex:
-                        self.logger.error('Got "%s" in callback' % ex)
+                        self.logger.error('[GM] Got "%s" in callback' % ex)
                         traceback.print_exc()
+            else:
+                self.logger.debug('***INCOMING FROM [%s]:%s***' % (msg.SID, msg.BODY))
+        else:#server
+            if msg.TYPE & MSG_EVENT:
+                if msg_body['type'] == 'online':
+                    self.logger.debug('[GM] user %s is now online' % msg.SID)
+                    self.online_callback(msg.SID)
+            else:
+                #self.logger.debug('***confirmed')
+                mid = msg.MID
+                
 
 
     @staticmethod
@@ -201,6 +216,7 @@ class GatewayMgr(object):
 
     def shutdown(self):
         gevent.joinall(self.greenlets)
+        self.gw_fd.close()
 
 
 if __name__ == '__main__':

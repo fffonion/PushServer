@@ -33,23 +33,22 @@ from Message import MessageObj
 from User import UserObj
 
 from config import *
-logger = Logger.Logging('logging')
 
 
 class DataMgr(Greenlet):
-    pickle_names = ['msgs', 'users', 'bundle_queue']
+    pickle_names = ['_msgs', '_users', 'send_queue', 'pending_online_users']
     data_version = 1000
 
-    def __init__(self):
+    def __init__(self, logger):
         Greenlet.__init__(self)
+        self.logger = logger
         self._users_lock = RLock()
         self._msgs = {}
         self._users = {}
-        self.msg_queue = Queue()
-        self.pending_online_queue = Queue()
+        self.send_queue = Queue()
+        self.pending_online_users = Queue()
         self.bootstrap()
         self._dying = False
-        self.daemon = True
         self.start()
 
     def bootstrap(self):
@@ -64,12 +63,13 @@ class DataMgr(Greenlet):
     def shutdown(self):
         '''Save data to disk'''
         self._dying = True
-        logger.debug('saving data to disk...')
+        self.logger.debug('[DM] saving data to disk...')
         self._save_cache()
 
     def reset(self):
         '''reset in-memory data and disk data'''
-        self.msg_queue = Queue()
+        self.send_queue = Queue()
+        self.pending_online_users = Queue()
         _ = opath.join(DATA_DIR, DM_PKL_NAME)
         if opath.exists(_):
             os.remove(_)
@@ -80,7 +80,7 @@ class DataMgr(Greenlet):
         for k in DataMgr.pickle_names:
             if k in self.__dict__:
                 _[k] = self.__dict__[k]
-        pickle.dump(_, file(opath.join(DATA_DIR, DM_PKL_NAME), 'wb'), pickle.HIGHEST_PROTOCOL)
+        #pickle.dump(_, file(opath.join(DATA_DIR, DM_PKL_NAME), 'wb'), pickle.HIGHEST_PROTOCOL)
 
     def msg_add(self, _):
         if not isinstance(_, MessageObj):
@@ -103,19 +103,19 @@ class DataMgr(Greenlet):
         return len(self._msgs)
 
 
-    # def msg_queue_pop_next(self, sort_func=None):
-    #     self._msg_queue_lock.acquire()
+    # def bundle_queue_pop_next(self, sort_func=None):
+    #     self._bundle_queue_lock.acquire()
     #     msgid = None
     #     msg = None
-    #     if len(self.msg_queue) > 0:
+    #     if len(self.bundle_queue) > 0:
     #         kwargs = {}
     #         if sort_func:
-    #             kwargs['key'] = lambda x: sort_func(self.msg_queue[x])
+    #             kwargs['key'] = lambda x: sort_func(self.bundle_queue[x])
     #         else:
-    #             kwargs['key'] = lambda x: self.msg_queue[x]
-    #         l = sorted(self.msg_queue, **kwargs)
+    #             kwargs['key'] = lambda x: self.bundle_queue[x]
+    #         l = sorted(self.bundle_queue, **kwargs)
     #         for msgid in l:
-    #             msg = self.msg_queue[msgid]
+    #             msg = self.bundle_queue[msgid]
     #             if msg._pr() >= 500:#retry high prioity
     #                 break
     #             #get targets every time poped
@@ -126,16 +126,16 @@ class DataMgr(Greenlet):
     #                 continue
     #             msg.set_targets(_)
     #             break
-    #             #del self.msg_queue[msgid]
-    #         self._msg_queue_lock.release()
+    #             #del self.bundle_queue[msgid]
+    #         self._bundle_queue_lock.release()
     #         return (msgid, msg)
     
-    def user_online(self, guid):
+    def set_user_online(self, guid):
         #TODO get userid from rid
         uid = "u" + guid
         u = UserObj(uid, guid)
         self.users_add(u)
-        self.pending_online_queue.put(guid)
+        self.pending_online_users.put(guid)
 
     def users_add(self, _):
         if not isinstance(_, UserObj):
@@ -162,9 +162,9 @@ class DataMgr(Greenlet):
     def users_count(self):
         return len(self._users)
 
-    def make_bundle(self, user_keys = None):
+    def make_bundle(self, send_func, user_keys = None):
         user_keys = user_keys or self._users.keys()
-        logger.debug('[DM] begin mapping of %d * %d' % (len(user_keys), self.msg_count))
+        self.logger.debug('[DM] begin mapping of %du * %dm' % (len(user_keys), self.msg_count))
         cnt = 0
         user_keys = sorted(user_keys, key = lambda x:self._users[x].pr, reverse = True)
         for k in user_keys:
@@ -173,9 +173,9 @@ class DataMgr(Greenlet):
                 _ = u.gen_bundle(m)
                 if _:
                     cnt += 1
-                    self.msg_queue.put(_, False)
+                    send_func(_)
         if cnt:
-            logger.debug('[DM] added %d new bundles' % cnt)
+            self.logger.debug('[DM] queued %d new bundles' % cnt)
         return cnt
 
 

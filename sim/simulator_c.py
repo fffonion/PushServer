@@ -51,49 +51,45 @@ def setTimeout(t, func, *args, **kwargs):
     time.sleep(t)
     print('called2')
     func(*args, **kwargs)
-
+last_mid = ''
 def loop():
+    global last_mid
     buf = ''
     tm = None
     while True:
-        buf += connection.read()
+        _ = connection.read()
+        if len(_) == 0:
+            time.sleep(random.random())
+            continue
+        buf += _
         try:
             msg2 = Packet.UnPack(buf) # Must catch error
         except DataNeededError:
-            time.sleep(random.random())
             continue
         else:
             buf = ''
         if msg2.SID == "":
-            print('***confirmed')
+            print('***ok')
             continue
         os.system('TITLE CLIENT %s INCOMING FROM [%s]:%s' % (_SID, msg2.SID, msg2.BODY))
         print('***INCOMING FROM [%s]:%s***' % (msg2.SID, msg2.BODY))
+        last_mid = msg2.MID
         
 recv_thread = threading.Thread(target = loop)
 recv_thread.setDaemon(True)
 recv_thread.start()
 
 while True:
-    _ = raw_input('RID> ') or '00000001'
-    if not _:
+    _ = raw_input('CONFIRM?> ') or 'y'
+    print(last_mid)
+    if _ == 'n':
         break
-    msg.MID = '233'
-    msg.RID = _
-    msg.TYPE = 0
-    _ = raw_input('MSG> ')
-    if not _:
-        break
-    if _.startswith('group'):
-        _1, action, data = _.split()
-        msg.TYPE = setBit(msgType, 5)
-        msg.BODY = '{"action":"%s", "data":"%s"}' % (action, data)
-        print(msg.BODY)
-    else:
-        msg.BODY = _
-
+    msg.SID = _SID
+    msg.MID = ''
+    msg.RID = "00000001"
+    msg.TYPE = 1
+    msg.BODY = '{"type":"receipt", "status":"ok", "mid":"'+last_mid+'"}'
     data = Packet.Pack(msg)
-
     data = connection.write(data) # You must implement your own tcp receiver
 
 

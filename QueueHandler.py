@@ -20,7 +20,7 @@
 from __future__ import print_function
 import time
 import random
-from gevent import Greenlet
+import gevent
 from gevent.lock import RLock
 from gevent.queue import Queue, Empty
 
@@ -30,32 +30,35 @@ from Message import MessageObj
 from DataMgr import DataMgr
 
 
-logger = Logger.Logging('logging')
+class QueueHandler(object):
 
-
-class QueueHandler(Greenlet):
-
-    def __init__(self, msg_queue, real_send_func):
-        self.msg_queue = msg_queue
-        self.last_idx = None
+    def __init__(self, logger, pending_online_users, make_func, send_func):
         self.alive = True
+        self.last_idx = None
+        self.logger = logger
+        self.pending_online_users = pending_online_users
         self._pause_lock = RLock()
-        self._send_func = real_send_func#self._send_func
-        Greenlet.__init__(self)
-        self.daemon = True
-        self.start()
+        self._make_func = make_func
+        self._send_func = send_func#self._send_func
+        #self.daemon = True
+        #self.start()
 
     def sort(self):
         pass
 
-    def put_msg(self, msg):
-        self.msg_queue.msg_queue_put(msg)
+    def put_bundle(self, msg):
+        self.bundle_queue.bundle_queue_put(msg)
 
     def shutdown(self):
         self.alive = False
         #put None to notify running thread
-        self.msg_queue.put(None, False)
-        self.join()
+        gevent.killall(self.greenlets)
+
+    def run(self):
+        self.greenlets = [
+            gevent.spawn(self.main_loop),
+            gevent.spawn(self.online_loop)
+        ]
 
     def pause(self):
         self._pause_lock.acquire()
@@ -65,27 +68,25 @@ class QueueHandler(Greenlet):
 
     @property
     def qsize(self):
-        return self.msg_queue.qsize()
+        return self.bundle_queue.qsize()
 
-
-
-    def run(self):
-        while self.alive:
-            try:
-                _ = self.msg_queue.get()
-            except Empty:
-                gevent.sleep(MSG_CHECK_INTERV)
-                continue
-            if not _:
-                if not self.alive:#force break
-                    logger.debug('[QH] got exit flag')
-                    return
-                else:#can be legacy flag 
-                    continue 
+    def main_loop(self):
+        while True:
+            #print('m1')
             self._pause_lock.acquire()
-            self._send_func(_)
+            #make bundle of full m*n map
+            self._make_func(self._send_func)
             self._pause_lock.release()
+            #print('m2')
             #TODO sleep longer
-            gevent.sleep(random.random())
+            #gevent.sleep(random.random())
+            gevent.sleep(MSG_CHECK_INTERV)
+
+    def online_loop(self):
+        while True:
+            #print('o1')
+            u = self.pending_online_users.get()
+            #print('o2')
+            self._make_func(self._send_func, user_keys = [u])#specific user map
 
 

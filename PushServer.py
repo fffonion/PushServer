@@ -18,6 +18,8 @@
 import atexit
 import gevent
 from gevent.queue import Queue, Empty
+from gevent import monkey
+#monkey.patch_all()
 
 import Logger
 from config import *
@@ -33,44 +35,39 @@ class PushServer(object):
     def __init__(self, logger):
         self.has_shutdown = False
         self.logger = logger
-        self.dm = DataMgr()
-        self.gm = GatewayMgr(logger, self.dm.user_online)
-        self.qh = QueueHandler(self.dm.msg_queue, self.gm.send_push)
+        self.greenlets = []
+        self.dm = DataMgr(self.logger)
+        self.gm = GatewayMgr(self.logger, self.dm.send_queue, self.dm.set_user_online)
+        self.qh = QueueHandler(self.logger, self.dm.pending_online_users, self.dm.make_bundle, self.gm.send_push)
         atexit.register(self.shutdown)
         logger.info('Server started.')
 
-    def main_loop(self):
+    def demo(self):
         import random
         import string
-        import time
-        u = UserObj('ua', 'a')
+        from User import UserObj
+        from Message import MessageObj
+        u = UserObj('u-a', 'a')
         self.dm.users_add(u)
         while True:
+            self.logger.debug('Add 1 new msg')
             m = MessageObj(''.join([random.choice(string.letters) for i in range(10)]))
             self.dm.msg_add(m)
-            gevent.sleep(MSG_CHECK_INTERV)
-            self.dm.make_bundle()
-            self.logger.debug('pending:%d' % self.qh.qsize)
-            while self.qh.qsize > 0:
-                gevent.sleep(1)
-            self.logger.debug('remaining msg queue size:%d' % self.qh.qsize)
-            gevent.sleep(10)
+            gevent.sleep(30)
 
-    def online_loop(self):
-        while True:
-            u = self.dm.pending_online_queue.get()
-            self.dm.make_bundle(u)
-    
+
     def run(self):
-        print('run')
+        self.dm.reset()
+        self.qh.run()
         self.greenlets = [
-            gevent.spawn(self.main_loop),
-            gevent.spawn(self.online_loop),
+            # gevent.spawn(self.main_loop),
+            # gevent.spawn(self.online_loop),
         ]
 
     def shutdown(self):
         if not self.has_shutdown:
             gevent.killall(self.greenlets)
+            self.qh.shutdown()
             try:
                 self.gm.shutdown()
             except KeyboardInterrupt:
@@ -85,6 +82,9 @@ def main():
         logger.info('Initializing...')
         ps = PushServer(logger)
         ps.run()
+        ps.demo()
+        while True:
+            gevent.sleep(0)
     except KeyboardInterrupt:
         return
 

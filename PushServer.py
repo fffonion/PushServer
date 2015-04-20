@@ -37,7 +37,7 @@ class PushServer(object):
         self.logger = logger
         self.greenlets = []
         self.dm = DataMgr(self.logger)
-        self.gm = GatewayMgr(self.logger, self.dm.send_queue, self.dm.set_user_online)
+        self.gm = GatewayMgr(self.logger, self.dm.send_queue, self.dm.set_user_online, self.dm.set_user_offline)
         self.qh = QueueHandler(self.logger, self.dm.pending_online_users, self.dm.make_bundle, self.gm.send_push)
         atexit.register(self.shutdown)
         logger.info('Server started.')
@@ -53,7 +53,7 @@ class PushServer(object):
             self.logger.debug('Add 1 new msg')
             m = MessageObj(''.join([random.choice(string.letters) for i in range(10)]))
             self.dm.msg_add(m)
-            gevent.sleep(30)
+            gevent.sleep(60)
 
 
     def run(self):

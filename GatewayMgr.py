@@ -92,9 +92,10 @@ class Packet(object):
 class GatewayMgr(object):
     PUSH_SERVER_SID = '00000001'
 
-    def __init__(self, logger, send_queue, online_callback_func):
+    def __init__(self, logger, send_queue, online_callback_func, offline_callback_func):
         self.logger = logger
         self.online_callback = online_callback_func
+        self.offline_callback = offline_callback_func
         self._gw_fd_raw = None
         self.gw_fd = None
         self.callback_tbl = {}
@@ -198,6 +199,9 @@ class GatewayMgr(object):
                 if msg_body['type'] == 'online':
                     self.logger.debug('[GM] user %s is now online' % msg.SID)
                     self.online_callback(msg.SID)
+                elif msg_body['type'] == 'offline':
+                    self.logger.debug('[GM] user %s is now offline' % msg.SID)
+                    self.offline_callback(msg.SID)
             else:
                 #self.logger.debug('***confirmed')
                 mid = msg.MID

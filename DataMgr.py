@@ -137,6 +137,10 @@ class DataMgr(Greenlet):
         self.users_add(u)
         self.pending_online_users.put(guid)
 
+    def set_user_offline(self, guid):
+        #TODO get userid from rid
+        self.users_del(guid)
+
     def users_add(self, _):
         if not isinstance(_, UserObj):
             raise ValueError(" argument is not a UserObj")

@@ -3,6 +3,7 @@
 sim/tlslite
 sim/google
 sim/_build
+google
 pymongo
 bson
 gridfs

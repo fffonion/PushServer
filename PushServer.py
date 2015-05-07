@@ -47,12 +47,12 @@ class PushServer(object):
         import string
         from User import UserObj
         from Message import MessageObj
-        u = UserObj('u-a', 'a')
+        u = UserObj('u-a', '12')
         self.dm.users_add(u)
         while True:
-            self.logger.debug('Add 1 new msg')
-            m = MessageObj(''.join([random.choice(string.letters) for i in range(10)]))
-            self.dm.msg_add(m)
+            # self.logger.debug('Add 1 new msg')
+            # m = MessageObj(''.join([random.choice(string.letters) for i in range(10)]))
+            # self.dm.msg_add(m)
             gevent.sleep(60)
 
 

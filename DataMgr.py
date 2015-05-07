@@ -31,6 +31,7 @@ import time
 import Logger
 from Message import MessageObj
 from User import UserObj
+from db_helper import mongo
 
 from config import *
 
@@ -184,6 +185,14 @@ class DataMgr(Greenlet):
 
 
     def run(self):
+        self.mongo_instance = mongo()
         while not self._dying:
+            msgids = self.mongo_instance.event_get_id(0)
+            for i in msgids:
+                m = MessageObj(
+                    payload_callback = lambda:self.mongo_instance.event_get_single_info(i),
+                    msgid = i
+                )
+                self.msg_add(m)
             gevent.sleep(60)
             self._save_cache()

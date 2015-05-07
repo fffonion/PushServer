@@ -8,6 +8,24 @@ import time
 import os
 import random
 import threading
+import httplib2
+import json
+while True:
+    uname = raw_input('uname> ')#hehedayo
+    pwd = raw_input('pwd> ')
+    ret = json.loads(httplib2.Http().request('http://123.56.142.241/v1/user/login?name='+uname+'&pwd='+pwd)[1])
+
+    if ret['status'] == 0:
+        token = ret['user_action']['token']
+        uid = str(ret['user_action']['uid'])
+    else:
+        print ret
+        print('ERROR [%d]:%s' % (ret['status'], ret['errmsg']))
+        continue
+    print('token acquired for [%s]: %s' % (uid, token))
+    break
+
+_SID = uid
 
 def setBit(int_type, offset):
     mask = 1 << offset
@@ -27,8 +45,7 @@ print '***connected***'
 
 ## Authentication message
 msg = message_pb2.Container()
-_SID = raw_input('YOUR SID> ')
-msg.SID = _SID#'a'
+msg.SID = uid
 msg.RID = ''
 msg.STIME = 0
 
@@ -39,7 +56,7 @@ msgType = setBit(msgType, 0) # Identity
 msgType = setBit(msgType, 1) # Authenticate
 
 msg.TYPE = msgType
-msg.BODY = '{"token":"foo"}'
+msg.BODY = '{"token":"%s"}' % token
 
 data = Packet.Pack(msg)
 
@@ -71,7 +88,7 @@ def loop():
         if msg2.SID == "":
             print('***ok')
             continue
-        os.system('TITLE CLIENT %s INCOMING FROM [%s]:%s' % (_SID, msg2.SID, msg2.BODY))
+        os.system('TITLE CLIENT %s INCOMING FROM [%s]:%s' % (_SID, msg2.SID, (msg2.BODY[:13]+"...") if len(msg2.BODY)>16 else msg2.BODY))
         print('***INCOMING FROM [%s]:%s***' % (msg2.SID, msg2.BODY))
         last_mid = msg2.MID
         

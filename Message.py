@@ -21,6 +21,10 @@ import os
 import binascii
 import time
 import random
+try:
+    import ujson as json
+except ImportError:
+    import json
 from config import *
 
 class MessageObj(object):
@@ -30,19 +34,19 @@ class MessageObj(object):
     STATUS_SUCCESS = 0
     STATUS_ERROR = 1
 
-    def __init__(self, payload, tags = []):
-        self._payload = payload
-        self.msgid = os.urandom(9)
+    def __init__(self, payload_callback = None, tags = [], msgid = None):
+        self.msgid = msgid
+        self._payload = payload_callback
         self.birth = time.time()
 
-    @property
-    def msgid_h(self):
-        '''Get human readable Msg ID'''
-        return binascii.hexlify(self.msgid)
+    # @property
+    # def msgid_h(self):
+    #     '''Get human readable Msg ID'''
+    #     return binascii.hexlify(self.msgid)
 
     @property
     def payload(self):
-        return self._payload
+        return json.dumps(self._payload())
 
 class BundledMessage(object):
     '''

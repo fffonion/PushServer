@@ -123,7 +123,7 @@ class GatewayMgr(object):
             MSG_CLIENT | MSG_RECEIPT,
             bundle.msg.payload,
             bundle.callback,
-            binascii.hexlify(bundle.msg.msgid) + bundle.user.guid
+            '%07d-%s' % (bundle.msg.msgid, bundle.user.guid)
         )
 
     def _queued_send(self, rid, msgtype, body, callback = None, mid = None):
@@ -231,7 +231,7 @@ if __name__ == '__main__':
     def sendme():
         while True:
             print('sent')
-            gm.send_push('a', 'PUSH MSG ->%s @%s' % ('a', time.strftime('%X', time.localtime(time.time()))))
+            gm.send_push('12', 'PUSH MSG ->%s @%s' % ('a', time.strftime('%X', time.localtime(time.time()))))
             gevent.sleep(2)
             
     print('wait for connection')

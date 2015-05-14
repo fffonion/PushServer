@@ -89,7 +89,10 @@ def loop():
             print('***ok')
             continue
         os.system('TITLE CLIENT %s INCOMING FROM [%s]:%s' % (_SID, msg2.SID, (msg2.BODY[:13]+"...") if len(msg2.BODY)>16 else msg2.BODY))
-        print('***INCOMING FROM [%s]:%s***' % (msg2.SID, msg2.BODY))
+        for k,v in json.loads(msg2.BODY).iteritems():
+            print("%s: %s" % (k,v))
+        print('=====================================')
+        #print('***INCOMING FROM [%s]:%s***' % (msg2.SID, msg2.BODY))
         last_mid = msg2.MID
         
 recv_thread = threading.Thread(target = loop)

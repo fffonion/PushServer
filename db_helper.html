@@ -1,0 +1,220 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>db_helper module &mdash; PushServer  documentation</title>
+    
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="PushServer  documentation" href="index.html" />
+    <link rel="next" title="gw_message_pb2 module" href="gw_message_pb2.html" />
+    <link rel="prev" title="cross_platform module" href="cross_platform.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gw_message_pb2.html" title="gw_message_pb2 module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="cross_platform.html" title="cross_platform module"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PushServer  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-db_helper">
+<span id="db-helper-module"></span><h1>db_helper module<a class="headerlink" href="#module-db_helper" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="db_helper.mongo">
+<em class="property">class </em><code class="descclassname">db_helper.</code><code class="descname">mongo</code><a class="reference internal" href="_modules/db_helper.html#mongo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#db_helper.mongo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="db_helper.mongo.comment_insert">
+<code class="descname">comment_insert</code><span class="sig-paren">(</span><em>cEvent_id</em>, <em>cUser_id</em>, <em>content</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/db_helper.html#mongo.comment_insert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#db_helper.mongo.comment_insert" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="db_helper.mongo.comments_get">
+<code class="descname">comments_get</code><span class="sig-paren">(</span><em>cEvent_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/db_helper.html#mongo.comments_get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#db_helper.mongo.comments_get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="db_helper.mongo.event_get_id">
+<code class="descname">event_get_id</code><span class="sig-paren">(</span><em>push_time</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/db_helper.html#mongo.event_get_id"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#db_helper.mongo.event_get_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="db_helper.mongo.event_get_info">
+<code class="descname">event_get_info</code><span class="sig-paren">(</span><em>cEvent_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/db_helper.html#mongo.event_get_info"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#db_helper.mongo.event_get_info" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="db_helper.mongo.event_get_single_info">
+<code class="descname">event_get_single_info</code><span class="sig-paren">(</span><em>cEvent_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/db_helper.html#mongo.event_get_single_info"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#db_helper.mongo.event_get_single_info" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="db_helper.mongo.event_off_info">
+<code class="descname">event_off_info</code><span class="sig-paren">(</span><em>cEvent_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/db_helper.html#mongo.event_off_info"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#db_helper.mongo.event_off_info" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="db_helper.mongo.friend_insert">
+<code class="descname">friend_insert</code><span class="sig-paren">(</span><em>cUser_id</em>, <em>f_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/db_helper.html#mongo.friend_insert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#db_helper.mongo.friend_insert" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="db_helper.mongo.friend_remove">
+<code class="descname">friend_remove</code><span class="sig-paren">(</span><em>cUser_id</em>, <em>f_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/db_helper.html#mongo.friend_remove"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#db_helper.mongo.friend_remove" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="db_helper.mongo.tag_insert">
+<code class="descname">tag_insert</code><span class="sig-paren">(</span><em>cUser_id</em>, <em>tag</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/db_helper.html#mongo.tag_insert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#db_helper.mongo.tag_insert" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary of function here.</p>
+<p>this is the function to insert tags of user 
+cUser_id is the id of user
+tag is the tag to be inserted</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="db_helper.mongo.tag_remove">
+<code class="descname">tag_remove</code><span class="sig-paren">(</span><em>cUser_id</em>, <em>tag</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/db_helper.html#mongo.tag_remove"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#db_helper.mongo.tag_remove" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="db_helper.mongo.user_info">
+<code class="descname">user_info</code><span class="sig-paren">(</span><em>cUser_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/db_helper.html#mongo.user_info"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#db_helper.mongo.user_info" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="db_helper.mongo.user_info_1">
+<code class="descname">user_info_1</code><span class="sig-paren">(</span><em>cUser_id</em>, <em>key</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/db_helper.html#mongo.user_info_1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#db_helper.mongo.user_info_1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="db_helper.mongo.user_info_2">
+<code class="descname">user_info_2</code><span class="sig-paren">(</span><em>cUser_id</em>, <em>key_1</em>, <em>key_2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/db_helper.html#mongo.user_info_2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#db_helper.mongo.user_info_2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="db_helper.mongo.user_info_3">
+<code class="descname">user_info_3</code><span class="sig-paren">(</span><em>cUser_id</em>, <em>key_1</em>, <em>key_2</em>, <em>key_3</em>, <em>key_4</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/db_helper.html#mongo.user_info_3"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#db_helper.mongo.user_info_3" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="db_helper.mysql">
+<em class="property">class </em><code class="descclassname">db_helper.</code><code class="descname">mysql</code><a class="reference internal" href="_modules/db_helper.html#mysql"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#db_helper.mysql" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>docstring for connector_MySQL</p>
+<dl class="method">
+<dt id="db_helper.mysql.find_uid">
+<code class="descname">find_uid</code><span class="sig-paren">(</span><em>_token</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/db_helper.html#mysql.find_uid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#db_helper.mysql.find_uid" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="db_helper.mysql.get_token">
+<code class="descname">get_token</code><span class="sig-paren">(</span><em>uid</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/db_helper.html#mysql.get_token"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#db_helper.mysql.get_token" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="db_helper.mysql.login_timeout">
+<code class="descname">login_timeout</code><em class="property"> = 1800</em><a class="headerlink" href="#db_helper.mysql.login_timeout" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="cross_platform.html"
+                        title="previous chapter">cross_platform module</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="gw_message_pb2.html"
+                        title="next chapter">gw_message_pb2 module</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/db_helper.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gw_message_pb2.html" title="gw_message_pb2 module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="cross_platform.html" title="cross_platform module"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PushServer  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2015, fffonion.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

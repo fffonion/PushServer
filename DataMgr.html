@@ -1,0 +1,310 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>DataMgr module &mdash; PushServer  documentation</title>
+    
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="PushServer  documentation" href="index.html" />
+    <link rel="next" title="GatewayMgr module" href="GatewayMgr.html" />
+    <link rel="prev" title="Welcome to PushServer documentation!" href="index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="GatewayMgr.html" title="GatewayMgr module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to PushServer documentation!"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PushServer  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-DataMgr">
+<span id="datamgr-module"></span><h1>DataMgr module<a class="headerlink" href="#module-DataMgr" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="DataMgr.DataMgr">
+<em class="property">class </em><code class="descclassname">DataMgr.</code><code class="descname">DataMgr</code><span class="sig-paren">(</span><em>logger</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/DataMgr.html#DataMgr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#DataMgr.DataMgr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">gevent.greenlet.Greenlet</span></code></p>
+<dl class="method">
+<dt id="DataMgr.DataMgr.bootstrap">
+<code class="descname">bootstrap</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/DataMgr.html#DataMgr.bootstrap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#DataMgr.DataMgr.bootstrap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Restore data from disk</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="DataMgr.DataMgr.data_version">
+<code class="descname">data_version</code><em class="property"> = 1000</em><a class="headerlink" href="#DataMgr.DataMgr.data_version" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="DataMgr.DataMgr.make_bundle">
+<code class="descname">make_bundle</code><span class="sig-paren">(</span><em>send_func</em>, <em>user_keys=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/DataMgr.html#DataMgr.make_bundle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#DataMgr.DataMgr.make_bundle" title="Permalink to this definition">¶</a></dt>
+<dd><p>make bundle and call send_func</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>send_func</strong> (<em>list</em>) &#8211; the function to call on generated bundles</li>
+<li><strong>user_keys</strong> &#8211; user guid list to do the match func</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="DataMgr.DataMgr.msg_add">
+<code class="descname">msg_add</code><span class="sig-paren">(</span><em>msg</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/DataMgr.html#DataMgr.msg_add"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#DataMgr.DataMgr.msg_add" title="Permalink to this definition">¶</a></dt>
+<dd><p>add message to msg_queue</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>msg</strong> (<a class="reference internal" href="Message.html#Message.MessageObj" title="Message.MessageObj"><em>MessageObj</em></a>) &#8211; msg to add</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="DataMgr.DataMgr.msg_count">
+<code class="descname">msg_count</code><a class="headerlink" href="#DataMgr.DataMgr.msg_count" title="Permalink to this definition">¶</a></dt>
+<dd><p>get message queue length</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="DataMgr.DataMgr.msg_del">
+<code class="descname">msg_del</code><span class="sig-paren">(</span><em>msgid</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/DataMgr.html#DataMgr.msg_del"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#DataMgr.DataMgr.msg_del" title="Permalink to this definition">¶</a></dt>
+<dd><p>del message by msgid</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>msgid</strong> (<em>int</em>) &#8211; message id</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="DataMgr.DataMgr.msg_get">
+<code class="descname">msg_get</code><span class="sig-paren">(</span><em>msgid</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/DataMgr.html#DataMgr.msg_get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#DataMgr.DataMgr.msg_get" title="Permalink to this definition">¶</a></dt>
+<dd><p>get message by msgid</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>msgid</strong> (<em>int</em>) &#8211; message id</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="DataMgr.DataMgr.msg_set">
+<code class="descname">msg_set</code><span class="sig-paren">(</span><em>msgid</em>, <em>msg</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/DataMgr.html#DataMgr.msg_set"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#DataMgr.DataMgr.msg_set" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="DataMgr.DataMgr.pickle_names">
+<code class="descname">pickle_names</code><em class="property"> = ['_msgs', '_users', 'send_queue', 'pending_online_users']</em><a class="headerlink" href="#DataMgr.DataMgr.pickle_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="DataMgr.DataMgr.reset">
+<code class="descname">reset</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/DataMgr.html#DataMgr.reset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#DataMgr.DataMgr.reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>reset in-memory data and disk data</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="DataMgr.DataMgr.run">
+<code class="descname">run</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/DataMgr.html#DataMgr.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#DataMgr.DataMgr.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>the background thread that automatically do n*m mapping</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="DataMgr.DataMgr.set_user_offline">
+<code class="descname">set_user_offline</code><span class="sig-paren">(</span><em>guid</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/DataMgr.html#DataMgr.set_user_offline"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#DataMgr.DataMgr.set_user_offline" title="Permalink to this definition">¶</a></dt>
+<dd><p>set user to offline</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>guid</strong> &#8211; user guid</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="DataMgr.DataMgr.set_user_online">
+<code class="descname">set_user_online</code><span class="sig-paren">(</span><em>guid</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/DataMgr.html#DataMgr.set_user_online"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#DataMgr.DataMgr.set_user_online" title="Permalink to this definition">¶</a></dt>
+<dd><p>set user to online</p>
+<p>this will generate a UserObj instance</p>
+<blockquote>
+<div><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">param guid:</th><td class="field-body">user guid</td>
+</tr>
+<tr class="field-even field"><th class="field-name">type guid:</th><td class="field-body">int</td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="DataMgr.DataMgr.shutdown">
+<code class="descname">shutdown</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/DataMgr.html#DataMgr.shutdown"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#DataMgr.DataMgr.shutdown" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save data to disk</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="DataMgr.DataMgr.users_add">
+<code class="descname">users_add</code><span class="sig-paren">(</span><em>u</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/DataMgr.html#DataMgr.users_add"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#DataMgr.DataMgr.users_add" title="Permalink to this definition">¶</a></dt>
+<dd><p>add a user instance to user queue</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>u</strong> (<a class="reference internal" href="User.html#User.UserObj" title="User.UserObj"><em>UserObj</em></a>) &#8211; user instance</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="DataMgr.DataMgr.users_count">
+<code class="descname">users_count</code><a class="headerlink" href="#DataMgr.DataMgr.users_count" title="Permalink to this definition">¶</a></dt>
+<dd><p>get user queue length</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="DataMgr.DataMgr.users_del">
+<code class="descname">users_del</code><span class="sig-paren">(</span><em>guid</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/DataMgr.html#DataMgr.users_del"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#DataMgr.DataMgr.users_del" title="Permalink to this definition">¶</a></dt>
+<dd><p>del user by guid</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>guid</strong> &#8211; user guid</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="DataMgr.DataMgr.users_get">
+<code class="descname">users_get</code><span class="sig-paren">(</span><em>guid</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/DataMgr.html#DataMgr.users_get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#DataMgr.DataMgr.users_get" title="Permalink to this definition">¶</a></dt>
+<dd><p>get user by guid</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>guid</strong> &#8211; user guid</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to PushServer documentation!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="GatewayMgr.html"
+                        title="next chapter">GatewayMgr module</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/DataMgr.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="GatewayMgr.html" title="GatewayMgr module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to PushServer documentation!"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PushServer  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2015, fffonion.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

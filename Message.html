@@ -1,0 +1,167 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Message module &mdash; PushServer  documentation</title>
+    
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="PushServer  documentation" href="index.html" />
+    <link rel="next" title="PushServer module" href="PushServer.html" />
+    <link rel="prev" title="Logger module" href="Logger.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="PushServer.html" title="PushServer module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="Logger.html" title="Logger module"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PushServer  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-Message">
+<span id="message-module"></span><h1>Message module<a class="headerlink" href="#module-Message" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="Message.BundledMessage">
+<em class="property">class </em><code class="descclassname">Message.</code><code class="descname">BundledMessage</code><span class="sig-paren">(</span><em>msg_ref</em>, <em>usr_ref</em>, <em>callback</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Message.html#BundledMessage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Message.BundledMessage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>The Bundle that wrapps message and other runtime-attrs to specific user</p>
+<dl class="method">
+<dt id="Message.BundledMessage.get_try_count">
+<code class="descname">get_try_count</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/Message.html#BundledMessage.get_try_count"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Message.BundledMessage.get_try_count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Message.BundledMessage.msg">
+<code class="descname">msg</code><a class="headerlink" href="#Message.BundledMessage.msg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Message.BundledMessage.user">
+<code class="descname">user</code><a class="headerlink" href="#Message.BundledMessage.user" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="Message.MessageObj">
+<em class="property">class </em><code class="descclassname">Message.</code><code class="descname">MessageObj</code><span class="sig-paren">(</span><em>payload_callback=None</em>, <em>tags_callback=None</em>, <em>msgid=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Message.html#MessageObj"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Message.MessageObj" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>The Message to be sent</p>
+<dl class="attribute">
+<dt id="Message.MessageObj.STATUS_ERROR">
+<code class="descname">STATUS_ERROR</code><em class="property"> = 1</em><a class="headerlink" href="#Message.MessageObj.STATUS_ERROR" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Message.MessageObj.STATUS_SUCCESS">
+<code class="descname">STATUS_SUCCESS</code><em class="property"> = 0</em><a class="headerlink" href="#Message.MessageObj.STATUS_SUCCESS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Message.MessageObj.payload">
+<code class="descname">payload</code><a class="headerlink" href="#Message.MessageObj.payload" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Message.MessageObj.tags">
+<code class="descname">tags</code><a class="headerlink" href="#Message.MessageObj.tags" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="Logger.html"
+                        title="previous chapter">Logger module</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="PushServer.html"
+                        title="next chapter">PushServer module</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/Message.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="PushServer.html" title="PushServer module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="Logger.html" title="Logger module"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PushServer  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2015, fffonion.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

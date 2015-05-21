@@ -1,0 +1,250 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Logger module &mdash; PushServer  documentation</title>
+    
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="PushServer  documentation" href="index.html" />
+    <link rel="next" title="Message module" href="Message.html" />
+    <link rel="prev" title="GatewayMgr module" href="GatewayMgr.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Message.html" title="Message module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="GatewayMgr.html" title="GatewayMgr module"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PushServer  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-Logger">
+<span id="logger-module"></span><h1>Logger module<a class="headerlink" href="#module-Logger" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="Logger.Logging">
+<em class="property">class </em><code class="descclassname">Logger.</code><code class="descname">Logging</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Logger.html#Logging"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Logger.Logging" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="attribute">
+<dt id="Logger.Logging.CRITICAL">
+<code class="descname">CRITICAL</code><em class="property"> = 5</em><a class="headerlink" href="#Logger.Logging.CRITICAL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Logger.Logging.DEBUG">
+<code class="descname">DEBUG</code><em class="property"> = 1</em><a class="headerlink" href="#Logger.Logging.DEBUG" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Logger.Logging.ERROR">
+<code class="descname">ERROR</code><em class="property"> = 4</em><a class="headerlink" href="#Logger.Logging.ERROR" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Logger.Logging.FATAL">
+<code class="descname">FATAL</code><em class="property"> = 5</em><a class="headerlink" href="#Logger.Logging.FATAL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Logger.Logging.INFO">
+<code class="descname">INFO</code><em class="property"> = 2</em><a class="headerlink" href="#Logger.Logging.INFO" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Logger.Logging.NOTSET">
+<code class="descname">NOTSET</code><em class="property"> = 0</em><a class="headerlink" href="#Logger.Logging.NOTSET" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Logger.Logging.SLEEP">
+<code class="descname">SLEEP</code><em class="property"> = 2</em><a class="headerlink" href="#Logger.Logging.SLEEP" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Logger.Logging.WARN">
+<code class="descname">WARN</code><em class="property"> = 3</em><a class="headerlink" href="#Logger.Logging.WARN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Logger.Logging.WARNING">
+<code class="descname">WARNING</code><em class="property"> = 3</em><a class="headerlink" href="#Logger.Logging.WARNING" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Logger.Logging.basicConfig">
+<code class="descname">basicConfig</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Logger.html#Logging.basicConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Logger.Logging.basicConfig" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Logger.Logging.critical">
+<code class="descname">critical</code><span class="sig-paren">(</span><em>fmt</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Logger.html#Logging.critical"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Logger.Logging.critical" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Logger.Logging.debug">
+<code class="descname">debug</code><span class="sig-paren">(</span><em>fmt</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Logger.html#Logging.debug"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Logger.Logging.debug" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Logger.Logging.dummy">
+<code class="descname">dummy</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Logger.html#Logging.dummy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Logger.Logging.dummy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Logger.Logging.error">
+<code class="descname">error</code><span class="sig-paren">(</span><em>fmt</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Logger.html#Logging.error"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Logger.Logging.error" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Logger.Logging.exception">
+<code class="descname">exception</code><span class="sig-paren">(</span><em>fmt</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Logger.html#Logging.exception"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Logger.Logging.exception" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="Logger.Logging.getLogger">
+<em class="property">classmethod </em><code class="descname">getLogger</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Logger.html#Logging.getLogger"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Logger.Logging.getLogger" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Logger.Logging.info">
+<code class="descname">info</code><span class="sig-paren">(</span><em>fmt</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Logger.html#Logging.info"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Logger.Logging.info" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Logger.Logging.log">
+<code class="descname">log</code><span class="sig-paren">(</span><em>level</em>, <em>fmt</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Logger.html#Logging.log"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Logger.Logging.log" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Logger.Logging.logpipe">
+<code class="descname">logpipe</code><span class="sig-paren">(</span><em>to</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Logger.html#Logging.logpipe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Logger.Logging.logpipe" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Logger.Logging.setlogfile">
+<code class="descname">setlogfile</code><span class="sig-paren">(</span><em>f</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Logger.html#Logging.setlogfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Logger.Logging.setlogfile" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Logger.Logging.warn">
+<code class="descname">warn</code><span class="sig-paren">(</span><em>fmt</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Logger.html#Logging.warn"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Logger.Logging.warn" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Logger.Logging.warning">
+<code class="descname">warning</code><span class="sig-paren">(</span><em>fmt</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Logger.html#Logging.warning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Logger.Logging.warning" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="Logger.zh_BJ">
+<em class="property">class </em><code class="descclassname">Logger.</code><code class="descname">zh_BJ</code><a class="reference internal" href="_modules/Logger.html#zh_BJ"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Logger.zh_BJ" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">datetime.tzinfo</span></code></p>
+<dl class="method">
+<dt id="Logger.zh_BJ.dst">
+<code class="descname">dst</code><span class="sig-paren">(</span><em>dt</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Logger.html#zh_BJ.dst"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Logger.zh_BJ.dst" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Logger.zh_BJ.utcoffset">
+<code class="descname">utcoffset</code><span class="sig-paren">(</span><em>dt</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Logger.html#zh_BJ.utcoffset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Logger.zh_BJ.utcoffset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="GatewayMgr.html"
+                        title="previous chapter">GatewayMgr module</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="Message.html"
+                        title="next chapter">Message module</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/Logger.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Message.html" title="Message module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="GatewayMgr.html" title="GatewayMgr module"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PushServer  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2015, fffonion.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

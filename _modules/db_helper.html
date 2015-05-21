@@ -1,0 +1,299 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>db_helper &mdash; PushServer  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="PushServer  documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">PushServer  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for db_helper</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/python</span>
+<span class="c"># -*- coding: utf-8 -*-</span>
+<span class="c"># import pymongo</span>
+
+<span class="kn">import</span> <span class="nn">MySQLdb</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">string</span>
+<span class="kn">from</span> <span class="nn">gevent</span> <span class="kn">import</span> <span class="n">monkey</span>
+<span class="n">monkey</span><span class="o">.</span><span class="n">patch_all</span><span class="p">()</span>
+<span class="kn">from</span> <span class="nn">_mysql_exceptions</span> <span class="kn">import</span> <span class="n">IntegrityError</span>
+<span class="kn">from</span> <span class="nn">pymongo</span> <span class="kn">import</span> <span class="n">MongoClient</span>
+
+<span class="kn">from</span> <span class="nn">config</span> <span class="kn">import</span> <span class="o">*</span>
+
+<div class="viewcode-block" id="mysql"><a class="viewcode-back" href="../db_helper.html#db_helper.mysql">[docs]</a><span class="k">class</span> <span class="nc">mysql</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;docstring for connector_MySQL&quot;&quot;&quot;</span>
+    <span class="n">login_timeout</span> <span class="o">=</span> <span class="mi">1800</span>
+
+<div class="viewcode-block" id="mysql.get_token"><a class="viewcode-back" href="../db_helper.html#db_helper.mysql.get_token">[docs]</a>    <span class="k">def</span> <span class="nf">get_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">uid</span><span class="p">):</span>
+        <span class="n">retry_count</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="n">db</span> <span class="o">=</span> <span class="n">MySQLdb</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">MYSQL_HOST</span><span class="p">,</span> <span class="n">MYSQL_USER</span><span class="p">,</span> <span class="n">MYSQL_PASSWD</span><span class="p">,</span> <span class="s">&quot;mydb_1&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">retry_count</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">cur</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+                <span class="n">_token</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                    <span class="n">random</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">string</span><span class="o">.</span><span class="n">digits</span> <span class="o">+</span> <span class="n">string</span><span class="o">.</span><span class="n">ascii_letters</span><span class="p">,</span> <span class="mi">32</span><span class="p">))</span>
+                <span class="n">str_1</span> <span class="o">=</span> <span class="s">&quot;SELECT * FROM Token WHERE uid = </span><span class="si">%d</span><span class="s"> &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">uid</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">str_1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">str_2</span> <span class="o">=</span> <span class="s">&quot;INSERT INTO Token (uid,timeout,token) VALUES (</span><span class="si">%d</span><span class="s">, </span><span class="si">%d</span><span class="s">, </span><span class="se">\&quot;</span><span class="si">%s</span><span class="se">\&quot;</span><span class="s"> )&quot;</span> <span class="o">%</span> <span class="p">(</span>
+                        <span class="n">uid</span><span class="p">,</span>
+                        <span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">+</span> <span class="n">login_timeout</span><span class="p">),</span>
+                        <span class="n">_token</span>
+                    <span class="p">)</span>
+                    <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">str_2</span><span class="p">)</span>
+                    <span class="n">cur</span><span class="o">.</span><span class="n">close</span>
+                    <span class="k">return</span> <span class="bp">True</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">str_2</span> <span class="o">=</span> <span class="s">&quot;UPDATE Token SET timeout = </span><span class="si">%d</span><span class="s">,token = </span><span class="se">\&quot;</span><span class="si">%s</span><span class="se">\&quot;</span><span class="s"> WHERE uid = </span><span class="si">%d</span><span class="s"> &quot;</span> <span class="o">%</span> <span class="p">(</span>
+                        <span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">+</span> <span class="n">login_timeout</span><span class="p">),</span> <span class="n">_token</span><span class="p">,</span> <span class="n">uid</span><span class="p">)</span>
+                    <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">str_2</span><span class="p">)</span>
+                    <span class="n">cur</span><span class="o">.</span><span class="n">close</span>
+                    <span class="k">return</span> <span class="bp">True</span>
+            <span class="k">except</span> <span class="n">IntegrityError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">e</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1062</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">e</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="bp">False</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">False</span>
+</div>
+<div class="viewcode-block" id="mysql.find_uid"><a class="viewcode-back" href="../db_helper.html#db_helper.mysql.find_uid">[docs]</a>    <span class="k">def</span> <span class="nf">find_uid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_token</span><span class="p">):</span>
+        <span class="n">db</span> <span class="o">=</span> <span class="n">MySQLdb</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">MYSQL_HOST</span><span class="p">,</span> <span class="n">MYSQL_USER</span><span class="p">,</span> <span class="n">MYSQL_PASSWD</span><span class="p">,</span> <span class="s">&quot;mydb_1&quot;</span><span class="p">)</span>
+        <span class="n">cur</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+        <span class="n">str_1</span> <span class="o">=</span> <span class="s">&quot;SELECT uid FROM Token WHERE token = </span><span class="se">\&quot;</span><span class="si">%s</span><span class="se">\&quot;</span><span class="s"> &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">_token</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">str_1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">_uid</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">str_2</span> <span class="o">=</span> <span class="s">&quot;SELECT timeout FROM Token WHERE token = </span><span class="se">\&quot;</span><span class="si">%s</span><span class="se">\&quot;</span><span class="s"> &quot;</span> <span class="o">%</span> <span class="p">(</span>
+                <span class="n">_token</span><span class="p">)</span>
+            <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">str_2</span><span class="p">)</span>
+            <span class="n">_timeout</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="c"># print _timeout</span>
+            <span class="c"># print int(time.time())</span>
+            <span class="k">if</span> <span class="p">((</span><span class="n">_timeout</span> <span class="o">-</span> <span class="n">login_timeout</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()))</span> <span class="ow">and</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">())</span> <span class="o">&lt;=</span> <span class="n">_timeout</span><span class="p">):</span>
+                <span class="n">str_3</span> <span class="o">=</span> <span class="s">&quot;UPDATE Token SET timeout = </span><span class="si">%d</span><span class="s"> WHERE token = </span><span class="se">\&quot;</span><span class="si">%s</span><span class="se">\&quot;</span><span class="s"> &quot;</span> <span class="o">%</span> <span class="p">(</span>
+                    <span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()),</span> <span class="n">_token</span><span class="p">)</span>
+                <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">str_3</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">_uid</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">False</span>
+</div></div>
+<div class="viewcode-block" id="mongo"><a class="viewcode-back" href="../db_helper.html#db_helper.mongo">[docs]</a><span class="k">class</span> <span class="nc">mongo</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="c">#     &quot;&quot;&quot;Summary of class here.</span>
+
+<span class="c">#     this class is used for Event_server to get the very data of Events and Users. </span>
+<span class="c">#     &quot;&quot;&quot;</span>
+
+    <span class="c"># conn = pymongo.Connection(&quot;127.0.0.1&quot;,12345)</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">conn</span> <span class="o">=</span> <span class="n">MongoClient</span><span class="p">(</span><span class="n">MONGO_HOST</span><span class="p">,</span> <span class="mi">12345</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">admin</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">authenticate</span><span class="p">(</span><span class="n">MONGO_USER</span><span class="p">,</span> <span class="n">MONGO_PASSWD</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">test</span>
+
+    <span class="c">#插入指定的用户标签(重复插入返回False，第一次插入返回True)</span>
+<div class="viewcode-block" id="mongo.tag_insert"><a class="viewcode-back" href="../db_helper.html#db_helper.mongo.tag_insert">[docs]</a>    <span class="k">def</span> <span class="nf">tag_insert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cUser_id</span><span class="p">,</span> <span class="n">tag</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Summary of function here.</span>
+
+<span class="sd">        this is the function to insert tags of user </span>
+<span class="sd">        cUser_id is the id of user</span>
+<span class="sd">        tag is the tag to be inserted&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">tag</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s">&#39;utf-8&#39;</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cUser</span><span class="o">.</span><span class="n">find_one</span><span class="p">({</span><span class="s">&quot;_id&quot;</span><span class="p">:</span><span class="n">cUser_id</span><span class="p">})[</span><span class="s">&#39;cUser_tag&#39;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cUser</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s">&quot;_id&quot;</span><span class="p">:</span><span class="n">cUser_id</span><span class="p">},{</span><span class="s">&quot;$push&quot;</span><span class="p">:{</span><span class="s">&quot;cUser_tag&quot;</span><span class="p">:</span><span class="n">tag</span><span class="p">}})</span>
+            <span class="k">return</span> <span class="bp">True</span>
+
+    <span class="c">#删除指定的用户标签</span></div>
+<div class="viewcode-block" id="mongo.tag_remove"><a class="viewcode-back" href="../db_helper.html#db_helper.mongo.tag_remove">[docs]</a>    <span class="k">def</span> <span class="nf">tag_remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cUser_id</span><span class="p">,</span><span class="n">tag</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cUser</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s">&quot;_id&quot;</span><span class="p">:</span><span class="n">cUser_id</span><span class="p">},{</span><span class="s">&quot;$pull&quot;</span><span class="p">:{</span><span class="s">&quot;cUser_tag&quot;</span><span class="p">:</span><span class="n">tag</span><span class="p">}})</span>
+
+    <span class="c">#加好友（重复插入返回False，第一次插入返回True）</span></div>
+<div class="viewcode-block" id="mongo.friend_insert"><a class="viewcode-back" href="../db_helper.html#db_helper.mongo.friend_insert">[docs]</a>    <span class="k">def</span> <span class="nf">friend_insert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cUser_id</span><span class="p">,</span><span class="n">f_id</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">f_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cUser</span><span class="o">.</span><span class="n">find_one</span><span class="p">({</span><span class="s">&quot;_id&quot;</span><span class="p">:</span><span class="n">cUser_id</span><span class="p">})[</span><span class="s">&#39;cUser_friend&#39;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cUser</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s">&quot;_id&quot;</span><span class="p">:</span><span class="n">cUser_id</span><span class="p">},{</span><span class="s">&quot;$push&quot;</span><span class="p">:{</span><span class="s">&quot;cUser_friend&quot;</span><span class="p">:</span><span class="n">f_id</span><span class="p">}})</span>
+            <span class="k">return</span> <span class="bp">True</span>
+
+    <span class="c">#删除好友</span></div>
+<div class="viewcode-block" id="mongo.friend_remove"><a class="viewcode-back" href="../db_helper.html#db_helper.mongo.friend_remove">[docs]</a>    <span class="k">def</span> <span class="nf">friend_remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cUser_id</span><span class="p">,</span><span class="n">f_id</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cUser</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s">&quot;_id&quot;</span><span class="p">:</span><span class="n">cUser_id</span><span class="p">},{</span><span class="s">&quot;$pull&quot;</span><span class="p">:{</span><span class="s">&quot;cUser_friend&quot;</span><span class="p">:</span><span class="n">f_id</span><span class="p">}})</span>
+
+    <span class="c">#获取用户信息，返回对应键的值，返回类型根据输入参数的不同而定，</span>
+    <span class="c">#name和email返回字符串</span>
+    <span class="c">#rank返回int</span>
+    <span class="c">#tag返回字符串数组</span>
+    <span class="c">#major返回Json对象</span></div>
+<div class="viewcode-block" id="mongo.user_info_1"><a class="viewcode-back" href="../db_helper.html#db_helper.mongo.user_info_1">[docs]</a>    <span class="k">def</span> <span class="nf">user_info_1</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cUser_id</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cUser</span><span class="o">.</span><span class="n">find_one</span><span class="p">({</span><span class="s">&quot;_id&quot;</span><span class="p">:</span><span class="n">cUser_id</span><span class="p">},{</span><span class="n">key</span><span class="p">:</span><span class="mi">1</span><span class="p">})[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="c">#获取用户信息，返回类型为Json对象</span></div>
+<div class="viewcode-block" id="mongo.user_info_2"><a class="viewcode-back" href="../db_helper.html#db_helper.mongo.user_info_2">[docs]</a>    <span class="k">def</span> <span class="nf">user_info_2</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cUser_id</span><span class="p">,</span><span class="n">key_1</span><span class="p">,</span><span class="n">key_2</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cUser</span><span class="o">.</span><span class="n">find_one</span><span class="p">({</span><span class="s">&quot;_id&quot;</span><span class="p">:</span><span class="n">cUser_id</span><span class="p">},{</span><span class="n">key_1</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="n">key_2</span><span class="p">:</span><span class="mi">1</span><span class="p">})</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="c">#获取用户信息，返回类型为Json对象</span></div>
+    <span class="k">def</span> <span class="nf">user_info_3</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cUser_id</span><span class="p">,</span><span class="n">key_1</span><span class="p">,</span><span class="n">key_2</span><span class="p">,</span><span class="n">key_3</span><span class="p">):</span>    
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cUser</span><span class="o">.</span><span class="n">find_one</span><span class="p">({</span><span class="s">&quot;_id&quot;</span><span class="p">:</span><span class="n">cUser_id</span><span class="p">},{</span><span class="n">key_1</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="n">key_2</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="n">key_3</span><span class="p">:</span><span class="mi">1</span><span class="p">})</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="c">#获取用户信息，返回类型为Json对象</span>
+<div class="viewcode-block" id="mongo.user_info_3"><a class="viewcode-back" href="../db_helper.html#db_helper.mongo.user_info_3">[docs]</a>    <span class="k">def</span> <span class="nf">user_info_3</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cUser_id</span><span class="p">,</span><span class="n">key_1</span><span class="p">,</span><span class="n">key_2</span><span class="p">,</span><span class="n">key_3</span><span class="p">,</span><span class="n">key_4</span><span class="p">):</span>    
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cUser</span><span class="o">.</span><span class="n">find_one</span><span class="p">({</span><span class="s">&quot;_id&quot;</span><span class="p">:</span><span class="n">cUser_id</span><span class="p">},{</span><span class="n">key_1</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="n">key_2</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="n">key_3</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="n">key_4</span><span class="p">:</span><span class="mi">1</span><span class="p">})</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>    
+
+    <span class="c">#获取用户信息（有用信息），返回类型为Json对象</span></div>
+<div class="viewcode-block" id="mongo.user_info"><a class="viewcode-back" href="../db_helper.html#db_helper.mongo.user_info">[docs]</a>    <span class="k">def</span> <span class="nf">user_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cUser_id</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cUser</span><span class="o">.</span><span class="n">find_one</span><span class="p">({</span><span class="s">&quot;_id&quot;</span><span class="p">:</span><span class="n">cUser_id</span><span class="p">},{</span><span class="s">&quot;cUser_name&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="s">&quot;cUser_tag&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="s">&quot;cUser_rank&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="s">&quot;cUser_major&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">})</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+            
+    <span class="c">#获取有效活动ID(返回活动截止时间大于查询时间的所有活动id，并且把过期的活动转移到cEvent_off集合中)</span></div>
+<div class="viewcode-block" id="mongo.event_get_id"><a class="viewcode-back" href="../db_helper.html#db_helper.mongo.event_get_id">[docs]</a>    <span class="k">def</span> <span class="nf">event_get_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">push_time</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">event_id</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cEvent</span><span class="o">.</span><span class="n">find</span><span class="p">():</span>
+                <span class="n">_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">i</span><span class="p">[</span><span class="s">&#39;cEvent_time&#39;</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">i</span><span class="p">[</span><span class="s">&#39;cEvent_time&#39;</span><span class="p">][</span><span class="n">_len</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">&gt;</span><span class="n">push_time</span><span class="p">:</span>
+                    <span class="n">event_id</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">[</span><span class="s">&#39;_id&#39;</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cEvent_off</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cEvent</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">event_id</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="c">#获取有效活动信息，输入参数为数组，返回类型为Json对象数组</span></div>
+<div class="viewcode-block" id="mongo.event_get_single_info"><a class="viewcode-back" href="../db_helper.html#db_helper.mongo.event_get_single_info">[docs]</a>    <span class="k">def</span> <span class="nf">event_get_single_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cEvent_id</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cEvent</span><span class="o">.</span><span class="n">find_one</span><span class="p">({</span><span class="s">&quot;_id&quot;</span><span class="p">:</span><span class="n">cEvent_id</span><span class="p">},</span>
+            <span class="p">{</span><span class="s">&quot;cEvent_name&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="s">&quot;cEvent_time&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="s">&quot;cEvent_content&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+            <span class="s">&quot;cEvent_theme&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="s">&quot;cEvent_place&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="s">&quot;cEvent_provider&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">})</span>
+            
+    <span class="c">#获取有效活动信息，输入参数为数组，返回类型为Json对象数组</span></div>
+<div class="viewcode-block" id="mongo.event_get_info"><a class="viewcode-back" href="../db_helper.html#db_helper.mongo.event_get_info">[docs]</a>    <span class="k">def</span> <span class="nf">event_get_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cEvent_id</span><span class="p">):</span>
+        <span class="n">content</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">cEvent_id</span><span class="p">:</span>
+                <span class="n">content</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cEvent</span><span class="o">.</span><span class="n">find_one</span><span class="p">({</span><span class="s">&quot;_id&quot;</span><span class="p">:</span><span class="n">i</span><span class="p">},</span>
+                    <span class="p">{</span><span class="s">&quot;cEvent_name&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="s">&quot;cEvent_time&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="s">&quot;cEvent_content&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+                    <span class="s">&quot;cEvent_theme&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="s">&quot;cEvent_place&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="s">&quot;cEvent_provider&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">}))</span>
+            <span class="k">return</span> <span class="n">content</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="c">#查询过期活动信息，返回类型为Json对象</span></div>
+<div class="viewcode-block" id="mongo.event_off_info"><a class="viewcode-back" href="../db_helper.html#db_helper.mongo.event_off_info">[docs]</a>    <span class="k">def</span> <span class="nf">event_off_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cEvent_id</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cEvent_off</span><span class="o">.</span><span class="n">find_one</span><span class="p">({</span><span class="s">&quot;_id&quot;</span><span class="p">:</span><span class="n">cEvent_id</span><span class="p">})</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="c">#查询活动评论，返回类型为Json对象数组</span></div>
+<div class="viewcode-block" id="mongo.comments_get"><a class="viewcode-back" href="../db_helper.html#db_helper.mongo.comments_get">[docs]</a>    <span class="k">def</span> <span class="nf">comments_get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cEvent_id</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cEvent</span><span class="o">.</span><span class="n">find_one</span><span class="p">({</span><span class="s">&quot;_id&quot;</span><span class="p">:</span><span class="n">cEvent_id</span><span class="p">},{</span><span class="s">&quot;cEvent_comment&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">})[</span><span class="s">&quot;cEvent_comment&quot;</span><span class="p">]</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="c">#插入一条评论</span></div>
+<div class="viewcode-block" id="mongo.comment_insert"><a class="viewcode-back" href="../db_helper.html#db_helper.mongo.comment_insert">[docs]</a>    <span class="k">def</span> <span class="nf">comment_insert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cEvent_id</span><span class="p">,</span> <span class="n">cUser_id</span><span class="p">,</span> <span class="n">content</span><span class="p">):</span>
+        <span class="n">icon</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cUser</span><span class="o">.</span><span class="n">find_one</span><span class="p">({</span><span class="s">&quot;_id&quot;</span><span class="p">:</span><span class="n">cUser_id</span><span class="p">},{</span><span class="s">&quot;cUser_icon&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">})[</span><span class="s">&quot;cUser_icon&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cEvent</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s">&quot;_id&quot;</span><span class="p">:</span><span class="n">cEvent_id</span><span class="p">},{</span><span class="s">&quot;$push&quot;</span><span class="p">:</span>
+            <span class="p">{</span><span class="s">&quot;cEvent_comment&quot;</span><span class="p">:{</span><span class="s">&quot;speaker_id&quot;</span><span class="p">:</span><span class="n">cUser_id</span><span class="p">,</span><span class="s">&quot;speaker_icon&quot;</span><span class="p">:</span><span class="n">icon</span><span class="p">,</span><span class="s">&quot;content&quot;</span><span class="p">:</span><span class="n">content</span><span class="p">}}})</span>
+</pre></div></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">PushServer  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2015, fffonion.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,7 @@
+GatewayMgr module
+=================
+
+.. automodule:: GatewayMgr
+    :members:
+    :undoc-members:
+    :show-inheritance:

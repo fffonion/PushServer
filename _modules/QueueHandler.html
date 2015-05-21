@@ -1,0 +1,187 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>QueueHandler &mdash; PushServer  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="PushServer  documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">PushServer  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for QueueHandler</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/env python</span>
+<span class="c"># -*- coding: utf-8 -*-</span>
+<span class="c">#</span>
+<span class="c"># Copyright 2015 fffonion</span>
+<span class="c">#</span>
+<span class="c"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may</span>
+<span class="c"># not use this file except in compliance with the License. You may obtain</span>
+<span class="c"># a copy of the License at</span>
+<span class="c">#</span>
+<span class="c">#     http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c">#</span>
+<span class="c"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT</span>
+<span class="c"># WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the</span>
+<span class="c"># License for the specific language governing permissions and limitations</span>
+<span class="c"># under the License.</span>
+
+<span class="c"># The Message Queue Handling Module</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">gevent</span>
+<span class="kn">from</span> <span class="nn">gevent.lock</span> <span class="kn">import</span> <span class="n">RLock</span>
+<span class="kn">from</span> <span class="nn">gevent.queue</span> <span class="kn">import</span> <span class="n">Queue</span><span class="p">,</span> <span class="n">Empty</span>
+
+<span class="kn">import</span> <span class="nn">Logger</span>
+<span class="kn">from</span> <span class="nn">config</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">Message</span> <span class="kn">import</span> <span class="n">MessageObj</span>
+<span class="kn">from</span> <span class="nn">DataMgr</span> <span class="kn">import</span> <span class="n">DataMgr</span>
+
+
+<div class="viewcode-block" id="QueueHandler"><a class="viewcode-back" href="../QueueHandler.html#QueueHandler.QueueHandler">[docs]</a><span class="k">class</span> <span class="nc">QueueHandler</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span> <span class="n">pending_online_users</span><span class="p">,</span> <span class="n">make_func</span><span class="p">,</span> <span class="n">send_func</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialize Queue Handler</span>
+
+<span class="sd">            :param logger: logger object</span>
+<span class="sd">            :type logger: Logger</span>
+<span class="sd">            :param pending_online_users: online users queue</span>
+<span class="sd">            :type pending_online_users: gevent.queue</span>
+<span class="sd">            :param make_func: the function to make bundle</span>
+<span class="sd">            :type make_func: lambda,instancemethod,function</span>
+<span class="sd">            :param send_func: the function to send bundle</span>
+<span class="sd">            :type send_func: lambda,instancemethod,function</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alive</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_idx</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logger</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pending_online_users</span> <span class="o">=</span> <span class="n">pending_online_users</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pause_lock</span> <span class="o">=</span> <span class="n">RLock</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_make_func</span> <span class="o">=</span> <span class="n">make_func</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_send_func</span> <span class="o">=</span> <span class="n">send_func</span><span class="c">#self._send_func</span>
+        <span class="c">#self.daemon = True</span>
+        <span class="c">#self.start()</span>
+
+<div class="viewcode-block" id="QueueHandler.shutdown"><a class="viewcode-back" href="../QueueHandler.html#QueueHandler.QueueHandler.shutdown">[docs]</a>    <span class="k">def</span> <span class="nf">shutdown</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alive</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="c">#put None to notify running thread</span>
+        <span class="n">gevent</span><span class="o">.</span><span class="n">killall</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">greenlets</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="QueueHandler.run"><a class="viewcode-back" href="../QueueHandler.html#QueueHandler.QueueHandler.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">greenlets</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">gevent</span><span class="o">.</span><span class="n">spawn</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">main_loop</span><span class="p">),</span>
+            <span class="n">gevent</span><span class="o">.</span><span class="n">spawn</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">online_loop</span><span class="p">)</span>
+        <span class="p">]</span>
+</div>
+<div class="viewcode-block" id="QueueHandler.pause"><a class="viewcode-back" href="../QueueHandler.html#QueueHandler.QueueHandler.pause">[docs]</a>    <span class="k">def</span> <span class="nf">pause</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pause_lock</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="QueueHandler.resume"><a class="viewcode-back" href="../QueueHandler.html#QueueHandler.QueueHandler.resume">[docs]</a>    <span class="k">def</span> <span class="nf">resume</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pause_lock</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+</div>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">qsize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">bundle_queue</span><span class="o">.</span><span class="n">qsize</span><span class="p">()</span>
+
+<div class="viewcode-block" id="QueueHandler.main_loop"><a class="viewcode-back" href="../QueueHandler.html#QueueHandler.QueueHandler.main_loop">[docs]</a>    <span class="k">def</span> <span class="nf">main_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_pause_lock</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span>
+            <span class="c"># call DataMgr.make_bundle to make bundle of full m*n map</span>
+            <span class="c"># and pass function _send_func(GatewayMgr.send_push) as argument</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_make_func</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_send_func</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_pause_lock</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+            <span class="c">#TODO sleep longer</span>
+            <span class="c">#gevent.sleep(random.random())</span>
+            <span class="n">gevent</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">MSG_CHECK_INTERV</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="QueueHandler.online_loop"><a class="viewcode-back" href="../QueueHandler.html#QueueHandler.QueueHandler.online_loop">[docs]</a>    <span class="k">def</span> <span class="nf">online_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="n">u</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pending_online_users</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+            <span class="c"># call DataMgr.make_bundle to make bundle of full m*1 map for specific user</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_make_func</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_send_func</span><span class="p">,</span> <span class="n">user_keys</span> <span class="o">=</span> <span class="p">[</span><span class="n">u</span><span class="p">])</span>
+            <span class="c"># context switch</span>
+            <span class="n">gevent</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</pre></div></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">PushServer  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2015, fffonion.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

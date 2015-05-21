@@ -1,0 +1,316 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>DataMgr &mdash; PushServer  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="PushServer  documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">PushServer  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for DataMgr</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/env python</span>
+<span class="c"># -*- coding: utf-8 -*-</span>
+<span class="c">#</span>
+<span class="c"># Copyright 2015 fffonion</span>
+<span class="c">#</span>
+<span class="c"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may</span>
+<span class="c"># not use this file except in compliance with the License. You may obtain</span>
+<span class="c"># a copy of the License at</span>
+<span class="c">#</span>
+<span class="c">#     http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c">#</span>
+<span class="c"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT</span>
+<span class="c"># WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the</span>
+<span class="c"># License for the specific language governing permissions and limitations</span>
+<span class="c"># under the License.</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">os.path</span> <span class="kn">as</span> <span class="nn">opath</span>
+<span class="kn">import</span> <span class="nn">gevent</span>
+<span class="kn">from</span> <span class="nn">gevent</span> <span class="kn">import</span> <span class="n">Greenlet</span>
+<span class="kn">from</span> <span class="nn">gevent.lock</span> <span class="kn">import</span> <span class="n">RLock</span>
+<span class="kn">from</span> <span class="nn">gevent.queue</span> <span class="kn">import</span> <span class="n">Queue</span><span class="p">,</span> <span class="n">Empty</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">ujsoqn</span> <span class="kn">as</span> <span class="nn">json</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+<span class="kn">import</span> <span class="nn">atexit</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">Logger</span>
+<span class="kn">from</span> <span class="nn">Message</span> <span class="kn">import</span> <span class="n">MessageObj</span>
+<span class="kn">from</span> <span class="nn">User</span> <span class="kn">import</span> <span class="n">UserObj</span>
+<span class="kn">from</span> <span class="nn">db_helper</span> <span class="kn">import</span> <span class="n">mongo</span>
+
+<span class="kn">from</span> <span class="nn">config</span> <span class="kn">import</span> <span class="o">*</span>
+
+
+<div class="viewcode-block" id="DataMgr"><a class="viewcode-back" href="../DataMgr.html#DataMgr.DataMgr">[docs]</a><span class="k">class</span> <span class="nc">DataMgr</span><span class="p">(</span><span class="n">Greenlet</span><span class="p">):</span>
+    <span class="n">pickle_names</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;_msgs&#39;</span><span class="p">,</span> <span class="s">&#39;_users&#39;</span><span class="p">,</span> <span class="s">&#39;send_queue&#39;</span><span class="p">,</span> <span class="s">&#39;pending_online_users&#39;</span><span class="p">]</span>
+    <span class="n">data_version</span> <span class="o">=</span> <span class="mi">1000</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logger</span><span class="p">):</span>
+        <span class="n">Greenlet</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logger</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_users_lock</span> <span class="o">=</span> <span class="n">RLock</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_msgs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_users</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">send_queue</span> <span class="o">=</span> <span class="n">Queue</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pending_online_users</span> <span class="o">=</span> <span class="n">Queue</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bootstrap</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dying</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+<div class="viewcode-block" id="DataMgr.bootstrap"><a class="viewcode-back" href="../DataMgr.html#DataMgr.DataMgr.bootstrap">[docs]</a>    <span class="k">def</span> <span class="nf">bootstrap</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Restore data from disk&quot;&quot;&quot;</span>
+        <span class="n">_</span> <span class="o">=</span> <span class="n">opath</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">DATA_DIR</span><span class="p">,</span> <span class="n">DM_PKL_NAME</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">opath</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">_</span><span class="p">):</span>
+            <span class="n">_</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">file</span><span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="s">&#39;rb&#39;</span><span class="p">))</span>
+            <span class="k">if</span> <span class="s">&#39;_version&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_</span> <span class="ow">or</span> <span class="n">_</span><span class="p">[</span><span class="s">&#39;_version&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">DataMgr</span><span class="o">.</span><span class="n">data_version</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&quot; pkl file mismatch:program(</span><span class="si">%d</span><span class="s">) file(</span><span class="si">%d</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">DataMgr</span><span class="o">.</span><span class="n">data_version</span><span class="p">,</span> <span class="bp">None</span> <span class="k">if</span> <span class="s">&#39;_version&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_</span> <span class="k">else</span> <span class="n">_</span><span class="p">[</span><span class="s">&#39;_version&#39;</span><span class="p">]))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">_</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="DataMgr.shutdown"><a class="viewcode-back" href="../DataMgr.html#DataMgr.DataMgr.shutdown">[docs]</a>    <span class="k">def</span> <span class="nf">shutdown</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Save data to disk&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dying</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;[DM] saving data to disk...&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_save_cache</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="DataMgr.reset"><a class="viewcode-back" href="../DataMgr.html#DataMgr.DataMgr.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;reset in-memory data and disk data&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">send_queue</span> <span class="o">=</span> <span class="n">Queue</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pending_online_users</span> <span class="o">=</span> <span class="n">Queue</span><span class="p">()</span>
+        <span class="n">_</span> <span class="o">=</span> <span class="n">opath</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">DATA_DIR</span><span class="p">,</span> <span class="n">DM_PKL_NAME</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">opath</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">_</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">_</span><span class="p">)</span>
+</div>
+    <span class="k">def</span> <span class="nf">_save_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># fixme: save to external database not implemented</span>
+        <span class="n">_</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;_version&#39;</span><span class="p">:</span><span class="n">DataMgr</span><span class="o">.</span><span class="n">data_version</span><span class="p">}</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">DataMgr</span><span class="o">.</span><span class="n">pickle_names</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="p">:</span>
+                <span class="n">_</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+        <span class="c">#pickle.dump(_, file(opath.join(DATA_DIR, DM_PKL_NAME), &#39;wb&#39;), pickle.HIGHEST_PROTOCOL)</span>
+
+<div class="viewcode-block" id="DataMgr.msg_add"><a class="viewcode-back" href="../DataMgr.html#DataMgr.DataMgr.msg_add">[docs]</a>    <span class="k">def</span> <span class="nf">msg_add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;add message to msg_queue</span>
+
+<span class="sd">            :param msg: msg to add</span>
+<span class="sd">            :type msg: MessageObj</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">MessageObj</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot; argument is not a MessageObj&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_msgs</span><span class="p">[</span><span class="n">msg</span><span class="o">.</span><span class="n">msgid</span><span class="p">]</span> <span class="o">=</span> <span class="n">msg</span>
+</div>
+<div class="viewcode-block" id="DataMgr.msg_get"><a class="viewcode-back" href="../DataMgr.html#DataMgr.DataMgr.msg_get">[docs]</a>    <span class="k">def</span> <span class="nf">msg_get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msgid</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get message by msgid</span>
+
+<span class="sd">            :param msgid: message id</span>
+<span class="sd">            :type msgid: int</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">msgid</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_msgs</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span><span class="s">&quot; msgid </span><span class="si">%d</span><span class="s"> not in queue&quot;</span> <span class="o">%</span> <span class="n">idx</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_msgs</span><span class="p">[</span><span class="n">msgid</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="DataMgr.msg_del"><a class="viewcode-back" href="../DataMgr.html#DataMgr.DataMgr.msg_del">[docs]</a>    <span class="k">def</span> <span class="nf">msg_del</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msgid</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;del message by msgid</span>
+
+<span class="sd">            :param msgid: message id</span>
+<span class="sd">            :type msgid: int</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_msgs</span><span class="p">[</span><span class="n">msgid</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="DataMgr.msg_set"><a class="viewcode-back" href="../DataMgr.html#DataMgr.DataMgr.msg_set">[docs]</a>    <span class="k">def</span> <span class="nf">msg_set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msgid</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_msgs</span><span class="p">[</span><span class="n">msgid</span><span class="p">]</span> <span class="o">=</span> <span class="n">msg</span>
+</div>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">msg_count</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get message queue length</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_msgs</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="DataMgr.set_user_online"><a class="viewcode-back" href="../DataMgr.html#DataMgr.DataMgr.set_user_online">[docs]</a>    <span class="k">def</span> <span class="nf">set_user_online</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">guid</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;set user to online</span>
+
+<span class="sd">        this will generate a UserObj instance</span>
+
+<span class="sd">            :param guid: user guid</span>
+<span class="sd">            :type guid: int</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c">#TODO get userid from rid</span>
+        <span class="n">uid</span> <span class="o">=</span> <span class="s">&quot;u&quot;</span> <span class="o">+</span> <span class="n">guid</span>
+        <span class="n">u</span> <span class="o">=</span> <span class="n">UserObj</span><span class="p">(</span><span class="n">uid</span><span class="p">,</span> <span class="n">guid</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">users_add</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pending_online_users</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">guid</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="DataMgr.set_user_offline"><a class="viewcode-back" href="../DataMgr.html#DataMgr.DataMgr.set_user_offline">[docs]</a>    <span class="k">def</span> <span class="nf">set_user_offline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">guid</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;set user to offline</span>
+
+<span class="sd">            :param guid: user guid</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c">#TODO get userid from rid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">users_del</span><span class="p">(</span><span class="n">guid</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="DataMgr.users_add"><a class="viewcode-back" href="../DataMgr.html#DataMgr.DataMgr.users_add">[docs]</a>    <span class="k">def</span> <span class="nf">users_add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;add a user instance to user queue</span>
+
+<span class="sd">            :param u: user instance</span>
+<span class="sd">            :type u: UserObj</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">UserObj</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot; argument is not a UserObj&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_users_lock</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_users</span><span class="p">[</span><span class="n">u</span><span class="o">.</span><span class="n">guid</span><span class="p">]</span> <span class="o">=</span> <span class="n">u</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_users_lock</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="DataMgr.users_get"><a class="viewcode-back" href="../DataMgr.html#DataMgr.DataMgr.users_get">[docs]</a>    <span class="k">def</span> <span class="nf">users_get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">guid</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get user by guid</span>
+
+<span class="sd">            :param guid: user guid</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">guid</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_users</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span><span class="s">&quot; guid </span><span class="si">%d</span><span class="s"> not in users list&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">guid</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_users</span><span class="p">[</span><span class="n">guid</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="DataMgr.users_del"><a class="viewcode-back" href="../DataMgr.html#DataMgr.DataMgr.users_del">[docs]</a>    <span class="k">def</span> <span class="nf">users_del</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">guid</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;del user by guid</span>
+
+<span class="sd">            :param guid: user guid</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="s">&#39;-&#39;</span> <span class="ow">in</span> <span class="n">guid</span><span class="p">:</span>  <span class="c"># convert to bytes</span>
+            <span class="n">guid</span> <span class="o">=</span> <span class="n">binascii</span><span class="o">.</span><span class="n">unhexlify</span><span class="p">(</span><span class="n">guid</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">guid</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_users</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span><span class="s">&quot; guid </span><span class="si">%d</span><span class="s"> not in users list&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">guid</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_users_lock</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_users</span><span class="p">[</span><span class="n">guid</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_users_lock</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+</div>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">users_count</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get user queue length</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_users</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DataMgr.make_bundle"><a class="viewcode-back" href="../DataMgr.html#DataMgr.DataMgr.make_bundle">[docs]</a>    <span class="k">def</span> <span class="nf">make_bundle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">send_func</span><span class="p">,</span> <span class="n">user_keys</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;make bundle and call send_func</span>
+
+<span class="sd">            :param send_func: the function to call on generated bundles</span>
+<span class="sd">            :type send_func: lambda, function, instancemethod</span>
+<span class="sd">            :param user_keys: user guid list to do the match func</span>
+<span class="sd">            :type send_func: list</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">user_keys</span> <span class="o">=</span> <span class="n">user_keys</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_users</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;[DM] begin mapping of </span><span class="si">%d</span><span class="s">u * </span><span class="si">%d</span><span class="s">m&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">user_keys</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">msg_count</span><span class="p">))</span>
+        <span class="n">cnt</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">user_keys</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">user_keys</span><span class="p">,</span> <span class="n">key</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">_users</span><span class="p">[</span><span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">pr</span><span class="p">,</span> <span class="n">reverse</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">user_keys</span><span class="p">:</span>
+            <span class="n">u</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_users</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">_k</span><span class="p">,</span> <span class="n">m</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_msgs</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                <span class="n">_</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">gen_bundle</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">_</span><span class="p">:</span>
+                    <span class="n">cnt</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="n">send_func</span><span class="p">(</span><span class="n">_</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cnt</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;[DM] queued </span><span class="si">%d</span><span class="s"> new bundles&#39;</span> <span class="o">%</span> <span class="n">cnt</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">cnt</span>
+
+</div>
+<div class="viewcode-block" id="DataMgr.run"><a class="viewcode-back" href="../DataMgr.html#DataMgr.DataMgr.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;the background thread that automatically do n*m mapping</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mongo_instance</span> <span class="o">=</span> <span class="n">mongo</span><span class="p">()</span>
+        <span class="k">while</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dying</span><span class="p">:</span>
+            <span class="n">msgids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mongo_instance</span><span class="o">.</span><span class="n">event_get_id</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">msgids</span><span class="p">:</span>
+                <span class="c"># generate new MessageObj instance</span>
+                <span class="n">m</span> <span class="o">=</span> <span class="n">MessageObj</span><span class="p">(</span>
+                    <span class="n">payload_callback</span> <span class="o">=</span> <span class="k">lambda</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">mongo_instance</span><span class="o">.</span><span class="n">event_get_single_info</span><span class="p">(</span><span class="n">i</span><span class="p">),</span>
+                    <span class="n">msgid</span> <span class="o">=</span> <span class="n">i</span>
+                <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">msg_add</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+            <span class="n">gevent</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">60</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_save_cache</span><span class="p">()</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">PushServer  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2015, fffonion.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

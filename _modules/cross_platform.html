@@ -1,0 +1,264 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>cross_platform &mdash; PushServer  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="PushServer  documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">PushServer  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for cross_platform</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/env python</span>
+<span class="c"># -*- coding: utf-8 -*-</span>
+<span class="c">#</span>
+<span class="c"># Copyright 2015 fffonion</span>
+<span class="c">#</span>
+<span class="c"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may</span>
+<span class="c"># not use this file except in compliance with the License. You may obtain</span>
+<span class="c"># a copy of the License at</span>
+<span class="c">#</span>
+<span class="c">#     http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c">#</span>
+<span class="c"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT</span>
+<span class="c"># WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the</span>
+<span class="c"># License for the specific language governing permissions and limitations</span>
+<span class="c"># under the License.</span>
+
+<span class="c"># A general cross platform helper</span>
+<span class="c">#</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">os.path</span> <span class="kn">as</span> <span class="nn">opath</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">locale</span>
+<span class="n">PYTHON3</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;3&#39;</span><span class="p">)</span>
+
+<span class="n">EXEBUNDLE</span> <span class="o">=</span> <span class="n">opath</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">])[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&#39;py&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span>
+<span class="n">LOCALE</span> <span class="o">=</span> <span class="n">locale</span><span class="o">.</span><span class="n">getdefaultlocale</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">CODEPAGE</span> <span class="o">=</span> <span class="n">locale</span><span class="o">.</span><span class="n">getdefaultlocale</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">NICE_TERM</span> <span class="o">=</span> <span class="s">&#39;NICE_TERM&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span>
+<span class="n">ANDROID</span> <span class="o">=</span> <span class="s">&#39;ANDROID_ARGUMENT&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span>
+<span class="n">convhans</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">ZhConversion</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="k">pass</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">chans</span> <span class="o">=</span> <span class="n">ZhConversion</span><span class="o">.</span><span class="n">convHans</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">LOCALE</span> <span class="o">==</span> <span class="s">&#39;zh_TW&#39;</span><span class="p">:</span>
+        <span class="n">convhans</span> <span class="o">=</span> <span class="n">chans</span><span class="o">.</span><span class="n">toTW</span>
+    <span class="k">elif</span> <span class="n">LOCALE</span> <span class="o">==</span> <span class="s">&#39;zh_HK&#39;</span><span class="p">:</span>
+        <span class="n">convhans</span> <span class="o">=</span> <span class="n">chans</span><span class="o">.</span><span class="n">toHK</span>
+<span class="k">if</span> <span class="n">PYTHON3</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">imp</span>
+    <span class="nb">reload</span> <span class="o">=</span> <span class="n">imp</span><span class="o">.</span><span class="n">reload</span>
+    <span class="nb">xrange</span> <span class="o">=</span> <span class="nb">range</span>
+
+
+<span class="n">getPATH0</span> <span class="o">=</span> <span class="p">(</span><span class="ow">not</span> <span class="n">EXEBUNDLE</span> <span class="ow">or</span> <span class="n">IRONPYTHON</span><span class="p">)</span> <span class="ow">and</span> \
+    <span class="p">(</span><span class="n">PYTHON3</span> <span class="ow">and</span>
+     <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c"># python3</span>
+     <span class="ow">or</span> <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">getfilesystemencoding</span><span class="p">())</span>
+     <span class="p">)</span> \
+    <span class="ow">or</span> <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">getfilesystemencoding</span><span class="p">())</span>  <span class="c"># pyinstaller build</span>
+
+<span class="k">if</span> <span class="n">ANDROID</span><span class="p">:</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">opath</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">getPATH0</span><span class="p">,</span> <span class="s">&#39;modules.zip&#39;</span><span class="p">))</span>
+
+<span class="n">raw_du8</span> <span class="o">=</span> <span class="p">(</span><span class="n">PYTHON3</span><span class="p">)</span> <span class="ow">and</span> \
+    <span class="p">(</span><span class="k">lambda</span> <span class="nb">str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> \
+    <span class="p">(</span><span class="k">lambda</span> <span class="nb">str</span><span class="p">:</span> <span class="n">convhans</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s">&#39;utf-8&#39;</span><span class="p">))</span>
+
+<span class="n">safestr</span> <span class="o">=</span> <span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">platform</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;cli&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">PYTHON3</span> <span class="ow">or</span> <span class="n">NICE_TERM</span><span class="p">)</span><span class="ow">and</span> \
+    <span class="p">(</span><span class="k">lambda</span> <span class="nb">str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> \
+    <span class="p">(</span><span class="k">lambda</span> <span class="nb">str</span><span class="p">:</span> <span class="nb">str</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span>
+        <span class="s">&#39;utf-8&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">locale</span><span class="o">.</span><span class="n">getdefaultlocale</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">or</span> <span class="s">&#39;utf-8&#39;</span><span class="p">,</span> <span class="s">&#39;replace&#39;</span><span class="p">))</span>
+
+<span class="n">du8</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">safestr</span><span class="p">(</span><span class="n">raw_du8</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+
+<span class="n">raw_inputd</span> <span class="o">=</span> <span class="n">PYTHON3</span> <span class="ow">and</span> \
+    <span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="nb">input</span><span class="p">(</span><span class="n">s</span><span class="p">))</span> \
+    <span class="ow">or</span> \
+    <span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="nb">raw_input</span><span class="p">(</span><span class="n">raw_du8</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">CODEPAGE</span> <span class="ow">or</span> <span class="s">&#39;utf-8&#39;</span><span class="p">)</span>
+                         <span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">CODEPAGE</span> <span class="ow">or</span> <span class="s">&#39;utf-8&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s">&#39;utf-8&#39;</span><span class="p">))</span>
+
+<span class="c"># from goagent.appcfg</span>
+
+
+<span class="k">def</span> <span class="nf">_win_getpass</span><span class="p">(</span><span class="n">prompt</span><span class="o">=</span><span class="s">&#39;Password:&#39;</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="n">password</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span>
+    <span class="k">while</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">ch</span> <span class="o">=</span> <span class="n">msvcrt</span><span class="o">.</span><span class="n">getch</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">ch</span> <span class="o">==</span> <span class="s">&#39;</span><span class="se">\b</span><span class="s">&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">password</span><span class="p">:</span>
+                <span class="n">password</span> <span class="o">=</span> <span class="n">password</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\b</span><span class="s"> </span><span class="se">\b</span><span class="s">&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">continue</span>
+        <span class="k">elif</span> <span class="n">ch</span> <span class="o">==</span> <span class="s">&#39;</span><span class="se">\r</span><span class="s">&#39;</span><span class="p">:</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">linesep</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">password</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">password</span> <span class="o">+=</span> <span class="n">ch</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;*&#39;</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">msvcrt</span>
+    <span class="n">getpass</span> <span class="o">=</span> <span class="n">_win_getpass</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">getpass</span>
+    <span class="n">getpass</span> <span class="o">=</span> <span class="n">getpass</span><span class="o">.</span><span class="n">getpass</span>
+
+<span class="n">wsa_errors</span> <span class="o">=</span> <span class="bp">None</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;win&#39;</span><span class="p">):</span>
+    <span class="n">wsa_errors</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="mi">10004</span><span class="p">:</span> <span class="s">&#39;中断函数调用&#39;</span><span class="p">,</span>
+        <span class="mi">10013</span><span class="p">:</span> <span class="s">&#39;权限被拒绝&#39;</span><span class="p">,</span>
+        <span class="mi">10014</span><span class="p">:</span> <span class="s">&#39;错误的地址&#39;</span><span class="p">,</span>
+        <span class="mi">10022</span><span class="p">:</span> <span class="s">&#39;参数无效&#39;</span><span class="p">,</span>
+        <span class="mi">10024</span><span class="p">:</span> <span class="s">&#39;打开的文件太多&#39;</span><span class="p">,</span>
+        <span class="mi">10035</span><span class="p">:</span> <span class="s">&#39;资源暂时不可用&#39;</span><span class="p">,</span>
+        <span class="mi">10036</span><span class="p">:</span> <span class="s">&#39;现在正在进行的操作&#39;</span><span class="p">,</span>
+        <span class="mi">10037</span><span class="p">:</span> <span class="s">&#39;操作已在进行&#39;</span><span class="p">,</span>
+        <span class="mi">10038</span><span class="p">:</span> <span class="s">&#39;套接字操作非插座进行插座上的&#39;</span><span class="p">,</span>
+        <span class="mi">10039</span><span class="p">:</span> <span class="s">&#39;所需的目标地址&#39;</span><span class="p">,</span>
+        <span class="mi">10040</span><span class="p">:</span> <span class="s">&#39;消息太长&#39;</span><span class="p">,</span>
+        <span class="mi">10041</span><span class="p">:</span> <span class="s">&#39;协议的套接字类型不正确&#39;</span><span class="p">,</span>
+        <span class="mi">10042</span><span class="p">:</span> <span class="s">&#39;错误的协议选项&#39;</span><span class="p">,</span>
+        <span class="mi">10043</span><span class="p">:</span> <span class="s">&#39;不支持的协议&#39;</span><span class="p">,</span>
+        <span class="mi">10044</span><span class="p">:</span> <span class="s">&#39;套接字类型不受支持&#39;</span><span class="p">,</span>
+        <span class="mi">10045</span><span class="p">:</span> <span class="s">&#39;不支持此操作&#39;</span><span class="p">,</span>
+        <span class="mi">10046</span><span class="p">:</span> <span class="s">&#39;协议系列不支持&#39;</span><span class="p">,</span>
+        <span class="mi">10047</span><span class="p">:</span> <span class="s">&#39;系列协议系列不支持地址&#39;</span><span class="p">,</span>
+        <span class="mi">10048</span><span class="p">:</span> <span class="s">&#39;地址已在使用中&#39;</span><span class="p">,</span>
+        <span class="mi">10049</span><span class="p">:</span> <span class="s">&#39;无法分配请求的地址&#39;</span><span class="p">,</span>
+        <span class="mi">10050</span><span class="p">:</span> <span class="s">&#39;网络出现故障&#39;</span><span class="p">,</span>
+        <span class="mi">10051</span><span class="p">:</span> <span class="s">&#39;网络不可访问&#39;</span><span class="p">,</span>
+        <span class="mi">10052</span><span class="p">:</span> <span class="s">&#39;网络中断连接重置&#39;</span><span class="p">,</span>
+        <span class="mi">10053</span><span class="p">:</span> <span class="s">&#39;软件造成连接终止&#39;</span><span class="p">,</span>
+        <span class="mi">10054</span><span class="p">:</span> <span class="s">&#39;连接被对等方重置&#39;</span><span class="p">,</span>
+        <span class="mi">10055</span><span class="p">:</span> <span class="s">&#39;没有可用的缓冲区空间&#39;</span><span class="p">,</span>
+        <span class="mi">10056</span><span class="p">:</span> <span class="s">&#39;套接字已连接&#39;</span><span class="p">,</span>
+        <span class="mi">10057</span><span class="p">:</span> <span class="s">&#39;套接字未连接&#39;</span><span class="p">,</span>
+        <span class="mi">10058</span><span class="p">:</span> <span class="s">&#39;套接字关闭后无法发送&#39;</span><span class="p">,</span>
+        <span class="mi">10060</span><span class="p">:</span> <span class="s">&#39;连接已超时&#39;</span><span class="p">,</span>
+        <span class="mi">10061</span><span class="p">:</span> <span class="s">&#39;连接被拒绝&#39;</span><span class="p">,</span>
+        <span class="mi">10064</span><span class="p">:</span> <span class="s">&#39;主机已关闭&#39;</span><span class="p">,</span>
+        <span class="mi">10065</span><span class="p">:</span> <span class="s">&#39;没有到主机的路由&#39;</span><span class="p">,</span>
+        <span class="mi">10067</span><span class="p">:</span> <span class="s">&#39;进程太多。&#39;</span><span class="p">,</span>
+        <span class="mi">10091</span><span class="p">:</span> <span class="s">&#39;网络子系统不可用。&#39;</span><span class="p">,</span>
+        <span class="mi">10092</span><span class="p">:</span> <span class="s">&#39;超出范围的 Winsock.dll 版本&#39;</span><span class="p">,</span>
+        <span class="mi">10093</span><span class="p">:</span> <span class="s">&#39;还没有执行成功的 WSAStartup&#39;</span><span class="p">,</span>
+        <span class="mi">10101</span><span class="p">:</span> <span class="s">&#39;正在进行的正常关机&#39;</span><span class="p">,</span>
+        <span class="mi">10109</span><span class="p">:</span> <span class="s">&#39;类找不到类型&#39;</span><span class="p">,</span>
+        <span class="mi">11001</span><span class="p">:</span> <span class="s">&#39;找不到主机。没有此主机不存在。&#39;</span><span class="p">,</span>
+        <span class="mi">11002</span><span class="p">:</span> <span class="s">&#39;没有发现非权威主机&#39;</span><span class="p">,</span>
+        <span class="mi">11003</span><span class="p">:</span> <span class="s">&#39;这是一个不可恢复的错误。&#39;</span><span class="p">,</span>
+        <span class="mi">11004</span><span class="p">:</span> <span class="s">&#39;有效的名称、 请求类型的任何数据记录&#39;</span>
+    <span class="p">}</span>
+<span class="c">#Fix for python2.7.9 missing sslwrap, from https://github.com/gevent/gevent/issues/477</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">9</span><span class="p">):</span>
+    <span class="n">__ssl__</span> <span class="o">=</span> <span class="nb">__import__</span><span class="p">(</span><span class="s">&#39;ssl&#39;</span><span class="p">)</span>
+    <span class="c">#import inspect</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">_ssl</span> <span class="o">=</span> <span class="n">__ssl__</span><span class="o">.</span><span class="n">_ssl</span>
+    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+        <span class="n">_ssl</span> <span class="o">=</span> <span class="n">__ssl__</span><span class="o">.</span><span class="n">_ssl2</span>
+
+<div class="viewcode-block" id="new_sslwrap"><a class="viewcode-back" href="../cross_platform.html#cross_platform.new_sslwrap">[docs]</a>    <span class="k">def</span> <span class="nf">new_sslwrap</span><span class="p">(</span><span class="n">sock</span><span class="p">,</span> <span class="n">server_side</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">keyfile</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">certfile</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">cert_reqs</span><span class="o">=</span><span class="n">__ssl__</span><span class="o">.</span><span class="n">CERT_NONE</span><span class="p">,</span> <span class="n">ssl_version</span><span class="o">=</span><span class="n">__ssl__</span><span class="o">.</span><span class="n">PROTOCOL_SSLv23</span><span class="p">,</span> <span class="n">ca_certs</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">ciphers</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">context</span> <span class="o">=</span> <span class="n">__ssl__</span><span class="o">.</span><span class="n">SSLContext</span><span class="p">(</span><span class="n">ssl_version</span><span class="p">)</span>
+        <span class="n">context</span><span class="o">.</span><span class="n">verify_mode</span> <span class="o">=</span> <span class="n">cert_reqs</span> <span class="ow">or</span> <span class="n">__ssl__</span><span class="o">.</span><span class="n">CERT_NONE</span>
+        <span class="k">if</span> <span class="n">ca_certs</span><span class="p">:</span>
+            <span class="n">context</span><span class="o">.</span><span class="n">load_verify_locations</span><span class="p">(</span><span class="n">ca_certs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">certfile</span><span class="p">:</span>
+            <span class="n">context</span><span class="o">.</span><span class="n">load_cert_chain</span><span class="p">(</span><span class="n">certfile</span><span class="p">,</span> <span class="n">keyfile</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ciphers</span><span class="p">:</span>
+            <span class="n">context</span><span class="o">.</span><span class="n">set_ciphers</span><span class="p">(</span><span class="n">ciphers</span><span class="p">)</span>
+
+        <span class="c">#caller_self = inspect.currentframe().f_back.f_locals[&#39;self&#39;]</span>
+        <span class="k">return</span> <span class="n">context</span><span class="o">.</span><span class="n">_wrap_socket</span><span class="p">(</span><span class="n">sock</span><span class="p">,</span> <span class="n">server_side</span><span class="o">=</span><span class="n">server_side</span><span class="p">)</span></div>
+    <span class="kn">import</span> <span class="nn">_ssl</span>
+    <span class="n">_ssl</span><span class="o">.</span><span class="n">sslwrap</span> <span class="o">=</span> <span class="n">new_sslwrap</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">PushServer  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2015, fffonion.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

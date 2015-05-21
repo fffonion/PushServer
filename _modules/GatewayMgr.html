@@ -1,0 +1,364 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GatewayMgr &mdash; PushServer  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="PushServer  documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">PushServer  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for GatewayMgr</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/env python</span>
+<span class="c"># -*- coding: utf-8 -*-</span>
+<span class="c">#</span>
+<span class="c"># Copyright 2015 fffonion</span>
+<span class="c">#</span>
+<span class="c"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may</span>
+<span class="c"># not use this file except in compliance with the License. You may obtain</span>
+<span class="c"># a copy of the License at</span>
+<span class="c">#</span>
+<span class="c">#     http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c">#</span>
+<span class="c"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS, WITHOUT</span>
+<span class="c"># WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the</span>
+<span class="c"># License for the specific language governing permissions and limitations`</span>
+<span class="c"># under the License.</span>
+
+<span class="c"># The Connection manager module</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">binascii</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">gevent</span>
+<span class="kn">import</span> <span class="nn">gevent.ssl</span>
+<span class="kn">from</span> <span class="nn">gevent</span> <span class="kn">import</span> <span class="n">Greenlet</span>
+<span class="kn">from</span> <span class="nn">gevent</span> <span class="kn">import</span> <span class="n">socket</span>
+<span class="kn">from</span> <span class="nn">gevent.queue</span> <span class="kn">import</span> <span class="n">Queue</span><span class="p">,</span> <span class="n">Empty</span>
+<span class="kn">from</span> <span class="nn">gevent.lock</span> <span class="kn">import</span> <span class="n">RLock</span>
+<span class="kn">import</span> <span class="nn">struct</span>
+<span class="kn">import</span> <span class="nn">traceback</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">ujson</span> <span class="kn">as</span> <span class="nn">json</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">from</span> <span class="nn">config</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">cross_platform</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">Message</span> <span class="kn">import</span> <span class="n">MessageObj</span>
+<span class="kn">import</span> <span class="nn">gw_message_pb2</span>
+
+<span class="c"># type enumaration</span>
+<span class="n">MSG_SERVER</span> <span class="o">=</span> <span class="mh">0x0</span>
+<span class="n">MSG_CLIENT</span> <span class="o">=</span> <span class="mh">0x1</span>
+<span class="n">MSG_AUTH</span> <span class="o">=</span> <span class="mh">0x2</span>
+<span class="n">MSG_HEARTBEAT</span> <span class="o">=</span> <span class="mh">0x4</span>
+<span class="n">MSG_RECEIPT</span> <span class="o">=</span> <span class="mh">0x8</span>
+<span class="n">MSG_NOT_TRANSIENT</span> <span class="o">=</span> <span class="mh">0x10</span>
+<span class="n">MSG_GROUP</span> <span class="o">=</span> <span class="mh">0x20</span>
+<span class="n">MSG_EVENT</span> <span class="o">=</span> <span class="mh">0x40</span>
+<span class="n">MSG_ERROR</span> <span class="o">=</span> <span class="mh">0x80000000</span>
+
+<span class="n">MAX_PACKET_LENGTH</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">20</span>
+
+<div class="viewcode-block" id="Error"><a class="viewcode-back" href="../GatewayMgr.html#GatewayMgr.Error">[docs]</a><span class="k">class</span> <span class="nc">Error</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">pass</span>
+</div>
+<div class="viewcode-block" id="DataNeededError"><a class="viewcode-back" href="../GatewayMgr.html#GatewayMgr.DataNeededError">[docs]</a><span class="k">class</span> <span class="nc">DataNeededError</span><span class="p">(</span><span class="n">Error</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+</div>
+<div class="viewcode-block" id="MaxLengthError"><a class="viewcode-back" href="../GatewayMgr.html#GatewayMgr.MaxLengthError">[docs]</a><span class="k">class</span> <span class="nc">MaxLengthError</span><span class="p">(</span><span class="n">Error</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+</div>
+<div class="viewcode-block" id="Packet"><a class="viewcode-back" href="../GatewayMgr.html#GatewayMgr.Packet">[docs]</a><span class="k">class</span> <span class="nc">Packet</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Packet.Pack"><a class="viewcode-back" href="../GatewayMgr.html#GatewayMgr.Packet.Pack">[docs]</a>    <span class="k">def</span> <span class="nf">Pack</span><span class="p">(</span><span class="n">message</span><span class="p">):</span>
+        <span class="n">raw</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">SerializeToString</span><span class="p">()</span>
+        <span class="n">length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s">&#39;&gt;I&#39;</span><span class="p">,</span> <span class="n">length</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">+=</span> <span class="n">raw</span>
+        <span class="k">return</span> <span class="n">data</span>
+</div>
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Packet.UnPack"><a class="viewcode-back" href="../GatewayMgr.html#GatewayMgr.Packet.UnPack">[docs]</a>    <span class="k">def</span> <span class="nf">UnPack</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">DataNeededError</span><span class="p">(</span><span class="s">&#39;At least 4 octets&#39;</span><span class="p">)</span>
+
+        <span class="n">length</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s">&#39;&gt;I&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">[:</span><span class="mi">4</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">length</span> <span class="o">&gt;</span> <span class="n">MAX_PACKET_LENGTH</span> <span class="p">:</span>
+            <span class="k">raise</span> <span class="n">MaxLengthError</span><span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">&lt;</span> <span class="p">(</span><span class="mi">4</span> <span class="o">+</span> <span class="n">length</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">DataNeededError</span><span class="p">(</span><span class="s">&#39;Need more data&#39;</span><span class="p">)</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">4</span><span class="p">:</span><span class="mi">4</span> <span class="o">+</span> <span class="n">length</span><span class="p">]</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">gw_message_pb2</span><span class="o">.</span><span class="n">Container</span><span class="p">()</span>
+        <span class="n">msg</span><span class="o">.</span><span class="n">ParseFromString</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">msg</span>
+</div></div>
+<div class="viewcode-block" id="GatewayMgr"><a class="viewcode-back" href="../GatewayMgr.html#GatewayMgr.GatewayMgr">[docs]</a><span class="k">class</span> <span class="nc">GatewayMgr</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="n">PUSH_SERVER_SID</span> <span class="o">=</span> <span class="s">&#39;00000001&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span> <span class="n">send_queue</span><span class="p">,</span> <span class="n">online_callback_func</span><span class="p">,</span> <span class="n">offline_callback_func</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;initialize GateManager</span>
+
+<span class="sd">            :param logger: logger object</span>
+<span class="sd">            :type logger: Logger</span>
+<span class="sd">            :param send_queue: logger object</span>
+<span class="sd">            :type send_queue: gevent.queue</span>
+<span class="sd">            :param online_callback_func: callback to call when user is online</span>
+<span class="sd">            :type online_callback_func: lambda,instancemethod,function</span>
+<span class="sd">            :param offline_callback_func: callback to call when user is offline</span>
+<span class="sd">            :type offline_callback_func: lambda,instancemethod,function</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logger</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">online_callback</span> <span class="o">=</span> <span class="n">online_callback_func</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">offline_callback</span> <span class="o">=</span> <span class="n">offline_callback_func</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_gw_fd_raw</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gw_fd</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">callback_tbl</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_send_queue</span> <span class="o">=</span> <span class="n">send_queue</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">greenlets</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">gevent</span><span class="o">.</span><span class="n">spawn</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_send</span><span class="p">),</span>
+            <span class="n">gevent</span><span class="o">.</span><span class="n">spawn</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_recv</span><span class="p">),</span>
+        <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">auth</span><span class="p">()</span>
+
+<div class="viewcode-block" id="GatewayMgr.connect"><a class="viewcode-back" href="../GatewayMgr.html#GatewayMgr.GatewayMgr.connect">[docs]</a>    <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;establish ssl(tls) connection over TCP&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_gw_fd_raw</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">socket</span><span class="o">.</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">socket</span><span class="o">.</span><span class="n">SOCK_STREAM</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_gw_fd_raw</span><span class="o">.</span><span class="n">connect</span><span class="p">((</span><span class="n">GATEWAY_HOST</span><span class="p">,</span> <span class="n">GATEWAY_PORT</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gw_fd</span> <span class="o">=</span> <span class="n">gevent</span><span class="o">.</span><span class="n">ssl</span><span class="o">.</span><span class="n">SSLSocket</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_gw_fd_raw</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="GatewayMgr.auth"><a class="viewcode-back" href="../GatewayMgr.html#GatewayMgr.GatewayMgr.auth">[docs]</a>    <span class="k">def</span> <span class="nf">auth</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;queued the authenication packge&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_queued_send</span><span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">MSG_CLIENT</span> <span class="o">|</span> <span class="n">MSG_AUTH</span><span class="p">,</span> <span class="s">&#39;{&quot;token&quot;:&quot;foo&quot;}&#39;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="GatewayMgr.send_push"><a class="viewcode-back" href="../GatewayMgr.html#GatewayMgr.GatewayMgr.send_push">[docs]</a>    <span class="k">def</span> <span class="nf">send_push</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bundle</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;generate TCP package from bundle</span>
+
+<span class="sd">            :param bundle: original bundle</span>
+<span class="sd">            :type bundle: MessageObj</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">gw_fd</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gw_fd_raw</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_queued_send</span><span class="p">(</span>
+            <span class="n">bundle</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">guid</span><span class="p">,</span>
+            <span class="n">MSG_CLIENT</span> <span class="o">|</span> <span class="n">MSG_RECEIPT</span><span class="p">,</span>
+            <span class="n">bundle</span><span class="o">.</span><span class="n">msg</span><span class="o">.</span><span class="n">payload</span><span class="p">,</span>
+            <span class="n">bundle</span><span class="o">.</span><span class="n">callback</span><span class="p">,</span>
+            <span class="s">&#39;</span><span class="si">%07d</span><span class="s">-</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">bundle</span><span class="o">.</span><span class="n">msg</span><span class="o">.</span><span class="n">msgid</span><span class="p">,</span> <span class="n">bundle</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">guid</span><span class="p">)</span>
+        <span class="p">)</span>
+</div>
+    <span class="k">def</span> <span class="nf">_queued_send</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rid</span><span class="p">,</span> <span class="n">msgtype</span><span class="p">,</span> <span class="n">body</span><span class="p">,</span> <span class="n">callback</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">mid</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;generate TCP package from seperate params</span>
+
+<span class="sd">            :param rid: receiver&#39;s ID</span>
+<span class="sd">            :type rid: int</span>
+<span class="sd">            :param msgtype: message type</span>
+<span class="sd">            :type msgtype: int</span>
+<span class="sd">            :param body: message body</span>
+<span class="sd">            :type body: str</span>
+<span class="sd">            :param callback: callback function</span>
+<span class="sd">            :type callback: lambda,instancemethod,function</span>
+<span class="sd">            :param mid: message ID</span>
+<span class="sd">            :type mid: int</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">mid</span> <span class="o">=</span> <span class="s">&#39;PSH&#39;</span> <span class="o">+</span> <span class="p">(</span><span class="n">mid</span> <span class="ow">or</span> <span class="n">binascii</span><span class="o">.</span><span class="n">hexlify</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">urandom</span><span class="p">(</span><span class="mi">9</span><span class="p">)))</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">gw_message_pb2</span><span class="o">.</span><span class="n">Container</span><span class="p">()</span>
+        <span class="n">msg</span><span class="o">.</span><span class="n">SID</span> <span class="o">=</span> <span class="n">GatewayMgr</span><span class="o">.</span><span class="n">PUSH_SERVER_SID</span>
+        <span class="n">msg</span><span class="o">.</span><span class="n">RID</span> <span class="o">=</span> <span class="n">rid</span>
+        <span class="n">msg</span><span class="o">.</span><span class="n">MID</span> <span class="o">=</span> <span class="n">mid</span>
+        <span class="n">msg</span><span class="o">.</span><span class="n">STIME</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">msg</span><span class="o">.</span><span class="n">TYPE</span> <span class="o">=</span> <span class="n">msgtype</span>
+        <span class="n">msg</span><span class="o">.</span><span class="n">BODY</span> <span class="o">=</span> <span class="n">body</span><span class="c">#&#39;{&quot;token&quot;:&quot;foo&quot;}&#39;</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="n">Packet</span><span class="o">.</span><span class="n">Pack</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="c"># put in send queue</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_send_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">callback</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">callback_tbl</span><span class="p">[</span><span class="n">mid</span><span class="p">]</span> <span class="o">=</span> <span class="n">callback</span>
+
+    <span class="c">#TODO reconnnect</span>
+    <span class="k">def</span> <span class="nf">_send</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="n">b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_send_queue</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">gw_fd</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_recv</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">buf</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c">#print(&#39;wait for read&#39;)</span>
+                <span class="n">socket</span><span class="o">.</span><span class="n">wait_read</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gw_fd</span><span class="o">.</span><span class="n">fileno</span><span class="p">())</span>
+            <span class="k">except</span> <span class="n">socket</span><span class="o">.</span><span class="n">error</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="c">#print(&#39;read&#39;)</span>
+            <span class="n">buf</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gw_fd</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">buf</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="n">Packet</span><span class="o">.</span><span class="n">UnPack</span><span class="p">(</span><span class="n">buf</span><span class="p">)</span> <span class="c"># Must catch error</span>
+            <span class="k">except</span> <span class="n">DataNeededError</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">buf</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_resp_handler</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+                <span class="k">break</span>
+            
+
+    <span class="k">def</span> <span class="nf">_resp_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;response handler&quot;&quot;&quot;</span>
+        <span class="c">#self.logger.debug(&quot;MID=%s&quot; % msg.MID)</span>
+        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">BODY</span><span class="p">:</span>
+            <span class="n">msg_body</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">BODY</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">msg_body</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="c">#print(msg)</span>
+        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">TYPE</span> <span class="o">&amp;</span> <span class="n">MSG_CLIENT</span><span class="p">:</span><span class="c">#client</span>
+            <span class="k">if</span> <span class="n">msg_body</span><span class="p">[</span><span class="s">&#39;type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;receipt&#39;</span><span class="p">:</span><span class="c">#is receipt</span>
+                <span class="n">mid</span> <span class="o">=</span> <span class="n">msg_body</span><span class="p">[</span><span class="s">&#39;mid&#39;</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> confirmed </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">SID</span><span class="p">,</span> <span class="n">mid</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">mid</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">callback_tbl</span><span class="p">:</span><span class="c">#has registered callback</span>
+                    <span class="n">_func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">callback_tbl</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">mid</span><span class="p">)</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">_func</span><span class="p">(</span><span class="n">MessageObj</span><span class="o">.</span><span class="n">STATUS_SUCCESS</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">KeyboardInterrupt</span>
+                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;[GM] Got &quot;</span><span class="si">%s</span><span class="s">&quot; in callback&#39;</span> <span class="o">%</span> <span class="n">ex</span><span class="p">)</span>
+                        <span class="n">traceback</span><span class="o">.</span><span class="n">print_exc</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;***INCOMING FROM [</span><span class="si">%s</span><span class="s">]:</span><span class="si">%s</span><span class="s">***&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">SID</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">BODY</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span><span class="c">#server</span>
+            <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">TYPE</span> <span class="o">&amp;</span> <span class="n">MSG_EVENT</span><span class="p">:</span><span class="c">#is user event</span>
+                <span class="k">if</span> <span class="n">msg_body</span><span class="p">[</span><span class="s">&#39;type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;online&#39;</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;[GM] user </span><span class="si">%s</span><span class="s"> is now online&#39;</span> <span class="o">%</span> <span class="n">msg</span><span class="o">.</span><span class="n">SID</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">online_callback</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">SID</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">msg_body</span><span class="p">[</span><span class="s">&#39;type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;offline&#39;</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;[GM] user </span><span class="si">%s</span><span class="s"> is now offline&#39;</span> <span class="o">%</span> <span class="n">msg</span><span class="o">.</span><span class="n">SID</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">offline_callback</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">SID</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span><span class="c">#others(take as empty message)</span>
+                <span class="c">#self.logger.debug(&#39;***confirmed&#39;)</span>
+                <span class="n">mid</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">MID</span>
+                
+
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="GatewayMgr.set_bit"><a class="viewcode-back" href="../GatewayMgr.html#GatewayMgr.GatewayMgr.set_bit">[docs]</a>    <span class="k">def</span> <span class="nf">set_bit</span><span class="p">(</span><span class="n">int_type</span><span class="p">,</span> <span class="n">offset</span><span class="p">):</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="n">offset</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">int_type</span> <span class="o">|</span> <span class="n">mask</span><span class="p">)</span>
+</div>
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="GatewayMgr.test_bit"><a class="viewcode-back" href="../GatewayMgr.html#GatewayMgr.GatewayMgr.test_bit">[docs]</a>    <span class="k">def</span> <span class="nf">test_bit</span><span class="p">(</span><span class="n">int_type</span><span class="p">,</span> <span class="n">offset</span><span class="p">):</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="n">offset</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">int_type</span> <span class="o">&amp;</span> <span class="n">mask</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="GatewayMgr.shutdown"><a class="viewcode-back" href="../GatewayMgr.html#GatewayMgr.GatewayMgr.shutdown">[docs]</a>    <span class="k">def</span> <span class="nf">shutdown</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">gevent</span><span class="o">.</span><span class="n">joinall</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">greenlets</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gw_fd</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+</div></div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">Logger</span>
+    <span class="n">logger</span> <span class="o">=</span> <span class="n">Logger</span><span class="o">.</span><span class="n">Logging</span><span class="p">(</span><span class="s">&#39;logging&#39;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">level</span> <span class="o">=</span> <span class="n">Logger</span><span class="o">.</span><span class="n">Logging</span><span class="o">.</span><span class="n">WARNING</span>
+    <span class="n">gm</span> <span class="o">=</span> <span class="n">GatewayMgr</span><span class="p">(</span><span class="n">logger</span><span class="p">,</span> <span class="n">online_callback</span> <span class="o">=</span> <span class="k">lambda</span> <span class="o">*</span><span class="n">_</span><span class="p">:</span><span class="bp">None</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">sendme</span><span class="p">():</span>
+        <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&#39;sent&#39;</span><span class="p">)</span>
+            <span class="n">gm</span><span class="o">.</span><span class="n">send_push</span><span class="p">(</span><span class="s">&#39;12&#39;</span><span class="p">,</span> <span class="s">&#39;PUSH MSG -&gt;</span><span class="si">%s</span><span class="s"> @</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="s">&#39;a&#39;</span><span class="p">,</span> <span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%X</span><span class="s">&#39;</span><span class="p">,</span> <span class="n">time</span><span class="o">.</span><span class="n">localtime</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()))))</span>
+            <span class="n">gevent</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+            
+    <span class="k">print</span><span class="p">(</span><span class="s">&#39;wait for connection&#39;</span><span class="p">)</span>
+    <span class="c">#gevent.spawn(sendme)</span>
+    <span class="n">gevent</span><span class="o">.</span><span class="n">joinall</span><span class="p">(</span><span class="n">gm</span><span class="o">.</span><span class="n">greenlets</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">PushServer  documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2015, fffonion.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

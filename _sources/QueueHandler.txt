@@ -1,0 +1,7 @@
+QueueHandler module
+===================
+
+.. automodule:: QueueHandler
+    :members:
+    :undoc-members:
+    :show-inheritance:

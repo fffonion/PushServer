@@ -1,0 +1,7 @@
+DataMgr module
+==============
+
+.. automodule:: DataMgr
+    :members:
+    :undoc-members:
+    :show-inheritance:

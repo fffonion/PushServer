@@ -1,0 +1,7 @@
+cross_platform module
+=====================
+
+.. automodule:: cross_platform
+    :members:
+    :undoc-members:
+    :show-inheritance:

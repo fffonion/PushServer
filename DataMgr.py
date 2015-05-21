@@ -53,7 +53,7 @@ class DataMgr(Greenlet):
         self.start()
 
     def bootstrap(self):
-        '''Restore data from disk'''
+        """Restore data from disk"""
         _ = opath.join(DATA_DIR, DM_PKL_NAME)
         if opath.exists(_):
             _ = pickle.load(file(_, 'rb'))
@@ -62,13 +62,13 @@ class DataMgr(Greenlet):
             self.__dict__.update(_)
 
     def shutdown(self):
-        '''Save data to disk'''
+        """Save data to disk"""
         self._dying = True
         self.logger.debug('[DM] saving data to disk...')
         self._save_cache()
 
     def reset(self):
-        '''reset in-memory data and disk data'''
+        """reset in-memory data and disk data"""
         self.send_queue = Queue()
         self.pending_online_users = Queue()
         _ = opath.join(DATA_DIR, DM_PKL_NAME)
@@ -83,17 +83,32 @@ class DataMgr(Greenlet):
                 _[k] = self.__dict__[k]
         #pickle.dump(_, file(opath.join(DATA_DIR, DM_PKL_NAME), 'wb'), pickle.HIGHEST_PROTOCOL)
 
-    def msg_add(self, _):
-        if not isinstance(_, MessageObj):
+    def msg_add(self, msg):
+        """add message to msg_queue
+
+            :param msg: msg to add
+            :type msg: MessageObj
+        """
+        if not isinstance(msg, MessageObj):
             raise ValueError(" argument is not a MessageObj")
-        self._msgs[_.msgid] = _
+        self._msgs[msg.msgid] = msg
 
     def msg_get(self, msgid):
+        """get message by msgid
+
+            :param msgid: message id
+            :type msgid: int
+        """
         if msgid not in self._msgs:
             raise IndexError(" msgid %d not in queue" % idx)
         return self._msgs[msgid]
 
     def msg_del(self, msgid):
+        """del message by msgid
+
+            :param msgid: message id
+            :type msgid: int
+        """
         del self._msgs[msgid]
 
     def msg_set(self, msgid, msg):
@@ -101,37 +116,18 @@ class DataMgr(Greenlet):
 
     @property
     def msg_count(self):
+        """get message queue length
+        """
         return len(self._msgs)
-
-
-    # def bundle_queue_pop_next(self, sort_func=None):
-    #     self._bundle_queue_lock.acquire()
-    #     msgid = None
-    #     msg = None
-    #     if len(self.bundle_queue) > 0:
-    #         kwargs = {}
-    #         if sort_func:
-    #             kwargs['key'] = lambda x: sort_func(self.bundle_queue[x])
-    #         else:
-    #             kwargs['key'] = lambda x: self.bundle_queue[x]
-    #         l = sorted(self.bundle_queue, **kwargs)
-    #         for msgid in l:
-    #             msg = self.bundle_queue[msgid]
-    #             if msg._pr() >= 500:#retry high prioity
-    #                 break
-    #             #get targets every time poped
-    #             _ = [u for t in msg.get_tags() if t in self.tags2user for u in self.tags2user[t] if not msg.is_tried(u)]
-    #             if not _:
-    #                 msgid = None
-    #                 msg = None
-    #                 continue
-    #             msg.set_targets(_)
-    #             break
-    #             #del self.bundle_queue[msgid]
-    #         self._bundle_queue_lock.release()
-    #         return (msgid, msg)
     
     def set_user_online(self, guid):
+        """set user to online
+
+        this will generate a UserObj instance
+
+            :param guid: user guid
+            :type guid: int
+        """
         #TODO get userid from rid
         uid = "u" + guid
         u = UserObj(uid, guid)
@@ -139,35 +135,62 @@ class DataMgr(Greenlet):
         self.pending_online_users.put(guid)
 
     def set_user_offline(self, guid):
+        """set user to offline
+
+            :param guid: user guid
+        """
         #TODO get userid from rid
         self.users_del(guid)
 
-    def users_add(self, _):
-        if not isinstance(_, UserObj):
+    def users_add(self, u):
+        """add a user instance to user queue
+
+            :param u: user instance
+            :type u: UserObj
+        """
+        if not isinstance(u, UserObj):
             raise ValueError(" argument is not a UserObj")
         self._users_lock.acquire()
-        self._users[_.guid] = _
+        self._users[u.guid] = u
         self._users_lock.release()
 
-    def users_get(self, uuid):
-        if uuid not in self._users:
-            raise IndexError(" uuid %d not in users list" % str(uuid))
-        return self._users[uuid]
+    def users_get(self, guid):
+        """get user by guid
 
-    def users_del(self, uuid):
-        if '-' in uuid:  # convert to bytes
-            uuid = binascii.unhexlify(uuid)
-        if uuid not in self._users:
-            raise IndexError(" uuid %d not in users list" % str(uuid))
+            :param guid: user guid
+        """
+        if guid not in self._users:
+            raise IndexError(" guid %d not in users list" % str(guid))
+        return self._users[guid]
+
+    def users_del(self, guid):
+        """del user by guid
+
+            :param guid: user guid
+        """
+        if '-' in guid:  # convert to bytes
+            guid = binascii.unhexlify(guid)
+        if guid not in self._users:
+            raise IndexError(" guid %d not in users list" % str(guid))
         self._users_lock.acquire()
-        del self._users[uuid]
+        del self._users[guid]
         self._users_lock.release()
 
     @property
     def users_count(self):
+        """get user queue length
+        """
         return len(self._users)
 
     def make_bundle(self, send_func, user_keys = None):
+        """make bundle and call send_func
+
+            :param send_func: the function to call on generated bundles
+            :type send_func: lambda, function, instancemethod
+            :param user_keys: user guid list to do the match func
+            :type send_func: list
+
+        """
         user_keys = user_keys or self._users.keys()
         self.logger.debug('[DM] begin mapping of %du * %dm' % (len(user_keys), self.msg_count))
         cnt = 0
@@ -185,10 +208,13 @@ class DataMgr(Greenlet):
 
 
     def run(self):
+        """the background thread that automatically do n*m mapping
+        """
         self.mongo_instance = mongo()
         while not self._dying:
             msgids = self.mongo_instance.event_get_id(0)
             for i in msgids:
+                # generate new MessageObj instance
                 m = MessageObj(
                     payload_callback = lambda:self.mongo_instance.event_get_single_info(i),
                     msgid = i

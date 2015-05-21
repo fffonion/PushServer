@@ -21,10 +21,21 @@ import uuid
 import time
 from Message import BundledMessage
 
+import alg
+
 
 class UserObj(object):
 
     def __init__(self, uid, gw_id, _match_func = None):
+        """Initialize User Object
+
+            :param uid: user id
+            :type uid: int
+            :param gw_id: gateway user ID
+            :type gw_id: int
+            :param _match_func: the matching function
+            :type _match_func: lambda,instancemethod,function
+        """
         self.uid = uid
         self.guid = gw_id
         self.heard_before = 0#the newest message user has been send
@@ -33,10 +44,10 @@ class UserObj(object):
         self.birth_time = time.time()
 
     def gen_bundle(self, msg):
-        '''
+        """
             Return BundledMessage if msg should be sent
             else return None
-        '''
+        """
         if msg.msgid in self.leaked_msg:#previously leaked
             b = BundledMessage(msg, self, self._send_callback)
             _ = self.leaked_msg[msg.msgid] + 1
@@ -48,7 +59,7 @@ class UserObj(object):
         return None
 
     def _match_func(self, msg):
-        return True
+        return alg.match([], [])
         #for test
         #return abs(int(str(self.guid)[-1], 16) - ord(msg.msgid[-1]) ^ 0xF) <= 2 #4/16 = 0.25
 

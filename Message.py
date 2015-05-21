@@ -28,31 +28,54 @@ except ImportError:
 from config import *
 
 class MessageObj(object):
-    '''
+    """
         The Message to be sent
-    '''
+    """
     STATUS_SUCCESS = 0
     STATUS_ERROR = 1
 
-    def __init__(self, payload_callback = None, tags = [], msgid = None):
+    def __init__(self, payload_callback = None, tags_callback = None, msgid = None):
+        """Initialize Message bject
+
+            :param payload_callback: the function to retreive payload
+            :type payload_callback: lambda,instancemethod,function
+            :param payload_callback: the function to retreive tags
+            :type payload_callback: lambda,instancemethod,function
+            :param msgid: the message ID
+            :type msgid: str
+        """
         self.msgid = msgid
         self._payload = payload_callback
+        self._tags = tags_callback
         self.birth = time.time()
 
     # @property
     # def msgid_h(self):
-    #     '''Get human readable Msg ID'''
+    #     """Get human readable Msg ID"""
     #     return binascii.hexlify(self.msgid)
 
     @property
     def payload(self):
         return json.dumps(self._payload())
 
+    @property
+    def tags(self):
+        return self._tags()
+
 class BundledMessage(object):
-    '''
+    """
         The Bundle that wrapps message and other runtime-attrs to specific user
-    '''
+    """
     def __init__(self, msg_ref, usr_ref, callback):
+        """Initialize Message bject
+
+            :param msg_ref: the reference to a MessageObj
+            :type msg_ref: MessageObj
+            :param usr_ref: the reference to a UserObj
+            :type usr_ref: UserObj
+            :param callback: the callback function from UserObj
+            :type callback: lambda,instancemethod,function
+        """
         # be sure not to change it
         self._msg = msg_ref
         #target user

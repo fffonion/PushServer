@@ -33,6 +33,17 @@ from DataMgr import DataMgr
 class QueueHandler(object):
 
     def __init__(self, logger, pending_online_users, make_func, send_func):
+        """Initialize Queue Handler
+
+            :param logger: logger object
+            :type logger: Logger
+            :param pending_online_users: online users queue
+            :type pending_online_users: gevent.queue
+            :param make_func: the function to make bundle
+            :type make_func: lambda,instancemethod,function
+            :param send_func: the function to send bundle
+            :type send_func: lambda,instancemethod,function
+        """
         self.alive = True
         self.last_idx = None
         self.logger = logger
@@ -42,12 +53,6 @@ class QueueHandler(object):
         self._send_func = send_func#self._send_func
         #self.daemon = True
         #self.start()
-
-    def sort(self):
-        pass
-
-    def put_bundle(self, msg):
-        self.bundle_queue.bundle_queue_put(msg)
 
     def shutdown(self):
         self.alive = False
@@ -72,21 +77,21 @@ class QueueHandler(object):
 
     def main_loop(self):
         while True:
-            #print('m1')
             self._pause_lock.acquire()
-            #make bundle of full m*n map
+            # call DataMgr.make_bundle to make bundle of full m*n map
+            # and pass function _send_func(GatewayMgr.send_push) as argument
             self._make_func(self._send_func)
             self._pause_lock.release()
-            #print('m2')
             #TODO sleep longer
             #gevent.sleep(random.random())
             gevent.sleep(MSG_CHECK_INTERV)
 
     def online_loop(self):
         while True:
-            #print('o1')
             u = self.pending_online_users.get()
-            #print('o2')
-            self._make_func(self._send_func, user_keys = [u])#specific user map
+            # call DataMgr.make_bundle to make bundle of full m*1 map for specific user
+            self._make_func(self._send_func, user_keys = [u])
+            # context switch
+            gevent.sleep(0)
 
 

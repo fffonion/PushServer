@@ -37,6 +37,7 @@ from cross_platform import *
 from Message import MessageObj
 import gw_message_pb2
 
+# type enumaration
 MSG_SERVER = 0x0
 MSG_CLIENT = 0x1
 MSG_AUTH = 0x2
@@ -93,6 +94,17 @@ class GatewayMgr(object):
     PUSH_SERVER_SID = '00000001'
 
     def __init__(self, logger, send_queue, online_callback_func, offline_callback_func):
+        """initialize GateManager
+
+            :param logger: logger object
+            :type logger: Logger
+            :param send_queue: logger object
+            :type send_queue: gevent.queue
+            :param online_callback_func: callback to call when user is online
+            :type online_callback_func: lambda,instancemethod,function
+            :param offline_callback_func: callback to call when user is offline
+            :type offline_callback_func: lambda,instancemethod,function
+        """
         self.logger = logger
         self.online_callback = online_callback_func
         self.offline_callback = offline_callback_func
@@ -108,14 +120,21 @@ class GatewayMgr(object):
         self.auth()
 
     def connect(self):
+        """establish ssl(tls) connection over TCP"""
         self._gw_fd_raw = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._gw_fd_raw.connect((GATEWAY_HOST, GATEWAY_PORT))
         self.gw_fd = gevent.ssl.SSLSocket(self._gw_fd_raw)
 
     def auth(self):
+        """queued the authenication packge"""
         self._queued_send('', MSG_CLIENT | MSG_AUTH, '{"token":"foo"}')
 
     def send_push(self, bundle):
+        """generate TCP package from bundle
+
+            :param bundle: original bundle
+            :type bundle: MessageObj
+        """
         if not self.gw_fd or not self._gw_fd_raw:
             self.connect()
         self._queued_send(
@@ -127,6 +146,19 @@ class GatewayMgr(object):
         )
 
     def _queued_send(self, rid, msgtype, body, callback = None, mid = None):
+        """generate TCP package from seperate params
+
+            :param rid: receiver's ID
+            :type rid: int
+            :param msgtype: message type
+            :type msgtype: int
+            :param body: message body
+            :type body: str
+            :param callback: callback function
+            :type callback: lambda,instancemethod,function
+            :param mid: message ID
+            :type mid: int
+        """
         mid = 'PSH' + (mid or binascii.hexlify(os.urandom(9)))
         msg = gw_message_pb2.Container()
         msg.SID = GatewayMgr.PUSH_SERVER_SID
@@ -137,7 +169,7 @@ class GatewayMgr(object):
         msg.BODY = body#'{"token":"foo"}'
 
         data = Packet.Pack(msg)
-
+        # put in send queue
         self._send_queue.put(data)
         if callback:
             self.callback_tbl[mid] = callback
@@ -173,17 +205,18 @@ class GatewayMgr(object):
             
 
     def _resp_handler(self, msg):
+        """response handler"""
         #self.logger.debug("MID=%s" % msg.MID)
         if msg.BODY:
             msg_body = json.loads(msg.BODY)
         else:
             msg_body = {}
         #print(msg)
-        if msg.TYPE & MSG_CLIENT:
-            if msg_body['type'] == 'receipt':
+        if msg.TYPE & MSG_CLIENT:#client
+            if msg_body['type'] == 'receipt':#is receipt
                 mid = msg_body['mid']
                 self.logger.debug('%s confirmed %s' % (msg.SID, mid))
-                if mid in self.callback_tbl:
+                if mid in self.callback_tbl:#has registered callback
                     _func = self.callback_tbl.pop(mid)
                     try:
                         _func(MessageObj.STATUS_SUCCESS)
@@ -195,14 +228,14 @@ class GatewayMgr(object):
             else:
                 self.logger.debug('***INCOMING FROM [%s]:%s***' % (msg.SID, msg.BODY))
         else:#server
-            if msg.TYPE & MSG_EVENT:
+            if msg.TYPE & MSG_EVENT:#is user event
                 if msg_body['type'] == 'online':
                     self.logger.debug('[GM] user %s is now online' % msg.SID)
                     self.online_callback(msg.SID)
                 elif msg_body['type'] == 'offline':
                     self.logger.debug('[GM] user %s is now offline' % msg.SID)
                     self.offline_callback(msg.SID)
-            else:
+            else:#others(take as empty message)
                 #self.logger.debug('***confirmed')
                 mid = msg.MID
                 

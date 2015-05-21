@@ -1,2 +1,4 @@
 pymongo
-google.protobuf
+protobuf
+gevent
+MySQLdb-python

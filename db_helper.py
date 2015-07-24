@@ -20,7 +20,7 @@ class mysql(object):
 
     def get_token(self, uid):
         retry_count = 2
-        db = MySQLdb.connect(MYSQL_HOST, MYSQL_USER, MYSQL_PASSWD, "mydb_1")
+        db = MySQLdb.connect(MYSQL_HOST, MYSQL_USER, MYSQL_PASSWD, "Register")
         for i in range(retry_count):
             try:
                 cur = db.cursor()
@@ -51,7 +51,7 @@ class mysql(object):
                 return False
 
     def find_uid(self, _token):
-        db = MySQLdb.connect(MYSQL_HOST, MYSQL_USER, MYSQL_PASSWD, "mydb_1")
+        db = MySQLdb.connect(MYSQL_HOST, MYSQL_USER, MYSQL_PASSWD, "Register")
         cur = db.cursor()
         str_1 = "SELECT uid FROM Token WHERE token = \"%s\" " % (_token)
         if cur.execute(str_1) == 0:
@@ -83,7 +83,7 @@ class mongo(object):
         conn = MongoClient(MONGO_HOST, 12345)
         self.db = conn.admin
         self.db.authenticate(MONGO_USER, MONGO_PASSWD)
-        self.db = conn.test
+        self.db = conn.core
 
     #插入指定的用户标签(重复插入返回False，第一次插入返回True)
     def tag_insert(self, cUser_id, tag):
@@ -163,10 +163,10 @@ class mongo(object):
                     event_id.append(i['_id'])
                 else:
                     self.db.cEvent_off.insert(i)
-                    self.db.cEvent.remove(i)
+                    self.db.cEvent.remove({"_id":i['_id']})
             return event_id
         except:
-            return False
+            return []
 
     #获取有效活动信息，输入参数为数组，返回类型为Json对象数组
     def event_get_single_info(self, cEvent_id):

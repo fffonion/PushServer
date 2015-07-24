@@ -8,6 +8,7 @@ import time
 import os
 import random
 import threading
+from config import *
 
 def setBit(int_type, offset):
     mask = 1 << offset
@@ -18,7 +19,7 @@ def testBit(int_type, offset):
     return (int_type & mask)
 
 sock = socket(AF_INET, SOCK_STREAM)
-sock.connect(('messagehive.dhc.house', 1430))
+sock.connect((GATEWAY_HOST, GATEWAY_PORT))
 
 connection = TLSConnection(sock)
 connection.handshakeClientCert()

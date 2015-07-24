@@ -71,6 +71,7 @@ class PushServer(object):
             except KeyboardInterrupt:
                 pass
             self.dm.shutdown()
+            gevent.shutdown()
             self.has_shutdown = True
             logger.info('Server exit nicely.')
 
@@ -92,6 +93,7 @@ def main():
             # register on SIGHUP to reload alg module
             # use kill -SIGHUP pid to send signal
             signal.signal(signal.SIGHUP, ps.reload_alg)
+            signal.signal(signal.SIGQUII, ps.shutdown)
         else:
             logger.warning('will never reload alg module on win32 platform')
         ps.demo()

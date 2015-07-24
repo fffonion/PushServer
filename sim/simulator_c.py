@@ -10,10 +10,11 @@ import random
 import threading
 import httplib2
 import json
+from config import *
 while True:
     uname = raw_input('uname> ')#hehedayo
     pwd = raw_input('pwd> ')
-    ret = json.loads(httplib2.Http().request('http://123.56.142.241/v1/user/login?name='+uname+'&pwd='+pwd)[1])
+    ret = json.loads(httplib2.Http().request('http://'+API_HOST+'/v1/user/login?phone='+uname+'&pwd='+pwd)[1])
 
     if ret['status'] == 0:
         token = ret['user_action']['token']
@@ -36,7 +37,7 @@ def testBit(int_type, offset):
     return (int_type & mask)
 
 sock = socket(AF_INET, SOCK_STREAM)
-sock.connect(('messagehive.dhc.house', 1430))
+sock.connect((GATEWAY_HOST, GATEWAY_PORT))
 
 connection = TLSConnection(sock)
 connection.handshakeClientCert()

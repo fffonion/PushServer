@@ -147,8 +147,8 @@ if sys.platform.startswith('win'):
         11003: '这是一个不可恢复的错误。',
         11004: '有效的名称、 请求类型的任何数据记录'
     }
-#Fix for python2.7.9 missing sslwrap, from https://github.com/gevent/gevent/issues/477
-if sys.version_info[:3] == (2, 7, 9):
+#Fix for python >= 2.7.9 missing sslwrap, from https://github.com/gevent/gevent/issues/477
+if sys.version_info[:3] >= (2, 7, 9):
     __ssl__ = __import__('ssl')
     #import inspect
     try:

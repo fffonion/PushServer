@@ -20,6 +20,7 @@
 import os
 import binascii
 import time
+import random
 import gevent
 import gevent.ssl
 from gevent import Greenlet
@@ -35,6 +36,7 @@ except ImportError:
 from config import *
 from cross_platform import *
 from Message import MessageObj
+from DataMgr import InconsistentError
 import gw_message_pb2
 
 # type enumaration
@@ -116,6 +118,7 @@ class GatewayMgr(object):
         self.greenlets = [
             gevent.spawn(self._send),
             gevent.spawn(self._recv),
+            gevent.spawn(self._heartbeat)
         ]
         self.auth()
 
@@ -174,11 +177,20 @@ class GatewayMgr(object):
         if callback:
             self.callback_tbl[mid] = callback
 
-    #TODO reconnnect
     def _send(self):
         while True:
             b = self._send_queue.get()
-            self.gw_fd.write(b)
+            if not self.gw_fd or not self._gw_fd_raw:
+                self.connect()
+            try:
+                self.gw_fd.write(b)
+            except socket.error:
+                try:
+                    self._gw_fd_raw.close()
+                except:
+                    pass
+                self._gw_fd_raw = None
+                self.gw_fd = None
 
     def _recv(self):
         buf = ''
@@ -202,7 +214,17 @@ class GatewayMgr(object):
                 self._resp_handler(msg)
             except KeyboardInterrupt:
                 break
-            
+
+    def _heartbeat(self):
+        while True:
+            gevent.sleep(HEARTBEAT_INTERV - random.random() * 3 - 3)
+            self._queued_send(
+                '0',
+                MSG_HEARTBEAT,
+                '',
+            )
+            #self.logger.debug("SENT heartbeat")
+
 
     def _resp_handler(self, msg):
         """response handler"""
@@ -231,10 +253,16 @@ class GatewayMgr(object):
             if msg.TYPE & MSG_EVENT:#is user event
                 if msg_body['type'] == 'online':
                     self.logger.debug('[GM] user %s is now online' % msg.SID)
-                    self.online_callback(msg.SID)
+                    try:
+                        self.online_callback(msg.SID)
+                    except InconsistentError as ex:
+                        self.logger.warning('error during setting %s online: %s' % (msg.SID, ex))
                 elif msg_body['type'] == 'offline':
                     self.logger.debug('[GM] user %s is now offline' % msg.SID)
-                    self.offline_callback(msg.SID)
+                    try:
+                        self.offline_callback(msg.SID)
+                    except InconsistentError as ex:
+                        self.logger.warning('error during setting %s offline: %s' % (msg.SID, ex))
             else:#others(take as empty message)
                 #self.logger.debug('***confirmed')
                 mid = msg.MID

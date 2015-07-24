@@ -35,6 +35,8 @@ from db_helper import mongo
 
 from config import *
 
+class InconsistentError(Exception):
+    pass
 
 class DataMgr(Greenlet):
     pickle_names = ['_msgs', '_users', 'send_queue', 'pending_online_users']
@@ -100,7 +102,7 @@ class DataMgr(Greenlet):
             :type msgid: int
         """
         if msgid not in self._msgs:
-            raise IndexError(" msgid %d not in queue" % idx)
+            raise IndexError(" msgid %s not in queue" % idx)
         return self._msgs[msgid]
 
     def msg_del(self, msgid):
@@ -160,7 +162,7 @@ class DataMgr(Greenlet):
             :param guid: user guid
         """
         if guid not in self._users:
-            raise IndexError(" guid %d not in users list" % str(guid))
+            raise IndexError(" guid %s not in users list" % guid)
         return self._users[guid]
 
     def users_del(self, guid):
@@ -171,7 +173,7 @@ class DataMgr(Greenlet):
         if '-' in guid:  # convert to bytes
             guid = binascii.unhexlify(guid)
         if guid not in self._users:
-            raise IndexError(" guid %d not in users list" % str(guid))
+            raise IndexError(" guid %s not in users list" % guid)
         self._users_lock.acquire()
         del self._users[guid]
         self._users_lock.release()
@@ -216,7 +218,7 @@ class DataMgr(Greenlet):
             for i in msgids:
                 # generate new MessageObj instance
                 m = MessageObj(
-                    payload_callback = lambda:self.mongo_instance.event_get_single_info(i),
+                    payload_callback = lambda d = i:self.mongo_instance.event_get_single_info(d),
                     msgid = i
                 )
                 self.msg_add(m)

@@ -180,21 +180,32 @@ class GatewayMgr(object):
     def _send(self):
         while True:
             b = self._send_queue.get()
-            if not self.gw_fd or not self._gw_fd_raw:
-                self.connect()
-            try:
-                self.gw_fd.write(b)
-            except socket.error:
+            ok = False
+            for _ in range(2):
+                if not self.gw_fd or not self._gw_fd_raw:
+                    self.connect()
                 try:
-                    self._gw_fd_raw.close()
-                except:
-                    pass
-                self._gw_fd_raw = None
-                self.gw_fd = None
+                    self.gw_fd.write(b)
+                except socket.error:
+                    try:
+                        self._gw_fd_raw.close()
+                    except:
+                        pass
+                    self._gw_fd_raw = None
+                    self.gw_fd = None
+                else:
+                    ok = True
+                if ok:
+                    break
+            if not ok:
+                self.logger.warn("failed to send packet")
 
     def _recv(self):
         buf = ''
         while True:
+            if not self.gw_fd or not self._gw_fd_raw:
+                gevent.sleep(random.random())
+                continue
             try:
                 #print('wait for read')
                 socket.wait_read(self.gw_fd.fileno())

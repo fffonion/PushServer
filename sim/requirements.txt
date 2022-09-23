@@ -15,7 +15,7 @@ launchpadlib==1.10.2
 lazr.restfulclient==0.13.3
 lazr.uri==1.0.3
 oauth==1.0.1
-protobuf==2.6.1
+protobuf==3.18.3
 pyOpenSSL==0.13
 pycrypto==2.6.1
 pygobject==3.12.0
